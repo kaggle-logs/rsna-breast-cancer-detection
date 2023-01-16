@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+INPUT_PATH = "./input/rsna-breast-cancer-detection/"
+
 @dataclass
 class TrainConfig:
     fold : int

@@ -1,22 +1,24 @@
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+from sklearn.model_selection import StratifiedKFold, GroupKFold
 
+import torch
+from torch.utils.data import Dataset, DataLoader, Subset
 
-# Optimizer/ Scheduler/ Criterion
-optimizer = torch.optim.Adam(model.parameters(), lr = LR, 
-                             weight_decay=WD)
-scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', 
-                              patience=LR_PATIENCE, verbose=True, factor=LR_FACTOR)
-criterion = nn.BCEWithLogitsLoss()
+# local
+from config import TrainConfig
+from dataset import RSNADataset
 
-
-def train(model, optimizer, scheduler, criterion, train_data : pd.DataFrame, cfg : TrainConfig):
+def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig):
     
     # Split in folds
     group_fold = GroupKFold(n_splits = cfg.fold)
 
     # Generate indices to split data into training and test set.
-    k_folds = group_fold.split(X = np.zeros(len(train_data)), 
-                               y = train_data['cancer'], 
-                               groups = train_data['patient_id'].tolist())
+    k_folds = group_fold.split(X = np.zeros(len(df_data)), 
+                               y = df_data['cancer'], 
+                               groups = df_data['patient_id'].tolist())
     
     # For each fold
     for idx, (train_index, valid_index) in enumerate(k_folds):
@@ -25,11 +27,11 @@ def train(model, optimizer, scheduler, criterion, train_data : pd.DataFrame, cfg
         # Best ROC score in this fold
         best_roc = None
         # Reset patience before every fold
-        patience_f = PATIENCE
+        patience_f = cfg.patience
 
         # --- Read in Data ---
-        train_data = train_data.iloc[train_index].reset_index(drop=True)
-        valid_data = train_data.iloc[valid_index].reset_index(drop=True)
+        train_data = df_data.iloc[train_index].reset_index(drop=True)
+        valid_data = df_data.iloc[valid_index].reset_index(drop=True)
 
         # Create Data instances
         train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, 
@@ -39,7 +41,7 @@ def train(model, optimizer, scheduler, criterion, train_data : pd.DataFrame, cfg
         
         # Dataloaders
         train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, 
-                                  shuffle=True, num_workers=cfg.num_worker2)
+                                  shuffle=True, num_workers=cfg.num_workers)
         valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, 
                                   shuffle=False, num_workers=cfg.num_workers)
 
