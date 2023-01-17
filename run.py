@@ -3,13 +3,12 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
 
 # local
-from config import TrainConfig
+from config import TrainConfig, DEVICE
 from model import ResNet50Network
 from utility import load_data, preprocess
 from train import train
 
 # set_seed()
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Device available now:', DEVICE)
 
 train_cfg = TrainConfig(

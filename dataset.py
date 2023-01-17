@@ -14,12 +14,13 @@ from albumentations.pytorch import ToTensorV2
 
 class RSNADataset(Dataset):
     
-    def __init__(self, dataframe, vertical_flip, horizontal_flip,
+    def __init__(self, dataframe, vertical_flip, horizontal_flip, csv_columns,
                  is_train=True):
         self.dataframe = dataframe
         self.is_train = is_train
         self.vertical_flip = vertical_flip
         self.horizontal_flip = horizontal_flip
+        self.csv_columns = csv_columns
         
         # Data Augmentation (custom for each dataset type)
         if is_train:
@@ -44,7 +45,7 @@ class RSNADataset(Dataset):
         image = pydicom.dcmread(image_path).pixel_array.astype(np.float32)
         
         # For this image also import .csv information
-        csv_data = np.array(self.dataframe.iloc[index][csv_columns].values, 
+        csv_data = np.array(self.dataframe.iloc[index][self.csv_columns].values, 
                             dtype=np.float32)
         # Apply transforms
         transf_image = self.transform(image=image)['image']

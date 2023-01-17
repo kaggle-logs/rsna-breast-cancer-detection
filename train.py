@@ -1,13 +1,18 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from time import time
+import datetime as dtime
+from datetime import datetime
 from sklearn.model_selection import StratifiedKFold, GroupKFold
+from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
 # local
-from config import TrainConfig
+from config import TrainConfig, DEVICE
+from utility import data_to_device
 from dataset import RSNADataset
 
 def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig):
@@ -34,9 +39,9 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
         valid_data = df_data.iloc[valid_index].reset_index(drop=True)
 
         # Create Data instances
-        train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, 
+        train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, 
                                     is_train=True)
-        valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip,
+        valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns,
                                     is_train=True)
         
         # Dataloaders
@@ -82,6 +87,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # Number of correct predictions
                 correct += (train_preds.cpu() == targets.cpu().unsqueeze(1)).sum().item()
 
+
             # Compute Train Accuracy
             train_acc = correct / len(train_index)
 
@@ -111,12 +117,10 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # Calculate ROC
                 valid_roc = roc_auc_score(valid_data['cancer'].values, 
                                           valid_preds.cpu())
-               # Calculate time on Train + Eval
-                duration = str(dtime.timedelta(seconds=time() - start_time))[:7]
 
                 # PRINT INFO
-                final_logs = '{} | Epoch: {}/{} | Loss: {:.4} | Acc_tr: {:.3} | Acc_vd: {:.3} | ROC: {:.3}'.\
-                                format(duration, epoch+1, EPOCHS, 
+                final_logs = 'Epoch: {}/{} | Loss: {:.4} | Acc_tr: {:.3} | Acc_vd: {:.3} | ROC: {:.3}'.\
+                                format(epoch+1, cfg.epochs, 
                                        train_losses, train_acc, valid_acc, valid_roc)
                 print(final_logs)
 
@@ -125,7 +129,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # Update scheduler (for learning_rate)
                 scheduler.step(valid_roc)
                 # Name the model
-                model_name = f"Fold{i+1}_Epoch{epoch+1}_ValidAcc{valid_acc:.3f}_ROC{valid_roc:.3f}.pth"
+                model_name = f"Fold{idx+1}_Epoch{epoch+1}_ValidAcc{valid_acc:.3f}_ROC{valid_roc:.3f}.pth"
 
                 # Update best_roc
                 if not best_roc: # If best_roc = None
@@ -148,7 +152,3 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                         print(stop_logs)
                         break
 
-        # === CLEANING ===
-        # Clear memory
-        del train, valid, train_loader, valid_loader, image, targets
-        gc.collect()
