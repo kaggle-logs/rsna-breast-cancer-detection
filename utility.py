@@ -13,7 +13,7 @@ def load_data(f_name):
     data = pd.read_csv(f"{INPUT_PATH}/{f_name}.csv")
     data["patient_id"] = data["patient_id"].apply(str)
     data["image_id"] = data["image_id"].apply(str)
-    data["path"] = f'{INPUT_PATH}/{f_name}_images/{data["patient_id"]}/{data["image_id"]}.dcm'
+    data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] +".dcm"
 
     return data
     
