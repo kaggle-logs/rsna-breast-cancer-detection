@@ -14,7 +14,7 @@ def load_data(f_name):
     data["patient_id"] = data["patient_id"].apply(str)
     data["image_id"] = data["image_id"].apply(str)
     data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] +".dcm"
-    data["path"] = "input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
+    # data["path"] = "input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
 
     return data
     
