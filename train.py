@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from time import time
 import datetime as dtime
+import subprocess
 from datetime import datetime
 from sklearn.model_selection import StratifiedKFold, GroupKFold
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
@@ -16,6 +17,7 @@ from utility import data_to_device
 from dataset import RSNADataset
 
 def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig):
+    print(">>>>> train start.")
     
     # Split in folds
     group_fold = GroupKFold(n_splits = cfg.fold)
@@ -52,6 +54,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
 
         # === EPOCHS ===
         for epoch in range(cfg.epochs):
+            print(f"Epoch # {epoch}")
             correct = 0
             train_losses = 0
 
@@ -60,7 +63,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
             model.train()
 
             # For each batch                
-            for k, data in tqdm(enumerate(train_loader)):
+            for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
                 # Save them to device
                 image, meta, targets = data_to_device(data)
 
@@ -87,9 +90,14 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # Number of correct predictions
                 correct += (train_preds.cpu() == targets.cpu().unsqueeze(1)).sum().item()
 
+                # memory cache
+                del image, meta, targets
+                torch.cuda.empty_cache()
+                print(f"allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
             # Compute Train Accuracy
             train_acc = correct / len(train_index)
+            print(f"train loop fin, train_acc = {train_acc}")
 
             # train loop fin
             # -------------------------

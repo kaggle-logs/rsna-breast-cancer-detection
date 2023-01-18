@@ -1,7 +1,7 @@
 import torch
 from dataclasses import dataclass
 
-INPUT_PATH = "./input/rsna-breast-cancer-detection/"
+# INPUT_PATH = "./input/rsna-breast-cancer-detection/"
 INPUT_PATH = "/kaggle/input/rsna-breast-cancer-detection/"
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
