@@ -148,7 +148,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 if valid_roc > best_roc:
                     best_roc = valid_roc
                     # Reset patience (because we have improvement)
-                    patience_f = PATIENCE
+                    patience_f = cfg.patience
                     torch.save(model.state_dict(), model_name)
                 else:
                     # Decrease patience (no improvement in ROC)
@@ -156,7 +156,6 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                     if patience_f == 0:
                         stop_logs = 'Early stopping (no improvement since 3 models) | Best ROC: {}'.\
                                     format(best_roc)
-                        add_in_file(stop_logs, f)
                         print(stop_logs)
                         break
 
