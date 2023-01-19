@@ -2,14 +2,18 @@ import os
 import torch
 from dataclasses import dataclass
 
-# INPUT_PATH = "./input/rsna-breast-cancer-detection/"
-INPUT_PATH = "/kaggle/input/rsna-breast-cancer-detection/"
+if os.path.exists("/kaggle") : 
+    PLATFORM = "kaggle"
+else : 
+    PLATFORM = "local"
+
+if PLATFORM == "kaggle" : 
+    INPUT_PATH = "/kaggle/input/rsna-breast-cancer-detection/"
+elif PLATFORM == "local" : 
+    INPUT_PATH = "./input/rsna-breast-cancer-detection/"
+
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-if os.path.exists("/kaggle") : 
-    DEVICE = "kaggle"
-else : 
-    DEVICE = "local"
 
 @dataclass
 class TrainConfig:
