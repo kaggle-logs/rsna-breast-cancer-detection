@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from time import time
+import gc
 import psutil
 import datetime as dtime
 import subprocess
@@ -93,6 +94,8 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
 
                 # memory cache
                 del image, meta, targets
+                gc.collect()
+
                 torch.cuda.empty_cache()
                 mem = psutil.virtual_memory()
                 print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
@@ -161,3 +164,5 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                         print(stop_logs)
                         break
 
+        del train, valid, train_loader, valid_loader, image, targets
+        gc.collect()
