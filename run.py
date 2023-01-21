@@ -2,6 +2,7 @@ import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
 import mlflow
+import subprocess
 
 # hydra
 import hydra
@@ -70,7 +71,7 @@ def main(cfg : DictConfig) -> None:
     scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', patience=1, verbose=True, factor=0.4)
     criterion = nn.BCEWithLogitsLoss()
 
-    train(model1, optimizer, scheduler, criterion, df_data=df_train, cfg=train_cfg, mlflow_client = client, run_id = run_id)
+    train(model1, optimizer, scheduler, criterion, df_data=df_train, cfg=train_cfg, mlflow_client = client, run_id = run.info.run_id)
 
     client.set_terminated(run.info.run_id)
 
