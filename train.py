@@ -58,7 +58,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
         for epoch in range(cfg.epochs):
             print(f"Epoch # {epoch}")
             correct = 0
-            train_losses = 0
+            train_losses = 0.0
 
             # === TRAIN ===
             # Sets the module in training mode.
@@ -92,8 +92,8 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # Number of correct predictions
                 correct += (train_preds.cpu() == targets.cpu().unsqueeze(1)).sum().item()
 
-                # memory cache
-                del image, meta, targets
+                # clean memory
+                del data, image, meta, targets, out, loss
                 gc.collect()
 
                 torch.cuda.empty_cache()
@@ -123,6 +123,12 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                     out = model(image, meta)
                     pred = torch.sigmoid(out)
                     valid_preds[k*image.shape[0] : k*image.shape[0] + image.shape[0]] = pred
+                   
+                    # clean memory
+                    del data, image, meta, targets, out, pred
+                    gc.collect()
+
+                    break
 
                 # Calculate accuracy
                 valid_acc = accuracy_score(valid_data['cancer'].values, 
@@ -132,9 +138,7 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                                           valid_preds.cpu())
 
                 # PRINT INFO
-                final_logs = 'Epoch: {}/{} | Loss: {:.4} | Acc_tr: {:.3} | Acc_vd: {:.3} | ROC: {:.3}'.\
-                                format(epoch+1, cfg.epochs, 
-                                       train_losses, train_acc, valid_acc, valid_roc)
+                final_logs = 'Epoch: {}/{} | train loss: {:.4} | train acc: {:.3} | valid acc: {:.3} | valid roc: {:.3}'. format(epoch+1, cfg.epochs, train_losses, train_acc, valid_acc, valid_roc)
                 print(final_logs)
 
                 # === SAVE MODEL ===
@@ -164,5 +168,5 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                         print(stop_logs)
                         break
 
-        del train, valid, train_loader, valid_loader, image, targets
+        del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()
