@@ -1,6 +1,7 @@
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import torch.nn as nn
+import mlflow
 
 # hydra
 import hydra
@@ -16,6 +17,23 @@ from train import train
 
 @hydra.main(version_base=None, config_path="conf", config_name="default")
 def main(cfg : DictConfig) -> None: 
+
+    # --- mlflow start
+    client = mlflow.tracking.MlflowClient()
+    # create exp
+    experiment = "experiment"
+    try:
+        exp_id = client.create_experiment(experiment)
+    except:
+        exp_id = client.get_experiment_by_name(experiment).experiment_id
+    
+    # MLFlow system tags 
+    # - https://mlflow.org/docs/latest/tracking.html?highlight=commit#system-tags
+    tags = {"mlflow.source.git.commit" : subprocess.check_output("git rev-parse HEAD".split()).strip().decode("utf-8") }
+    run = client.create_run(exp_id, tags=tags)
+
+    client.log_metric(run.info.run_id, "fold", cfg.exp.fold)
+
     yaml = OmegaConf.to_yaml(cfg)
     print(yaml)
 
@@ -52,7 +70,9 @@ def main(cfg : DictConfig) -> None:
     scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', patience=1, verbose=True, factor=0.4)
     criterion = nn.BCEWithLogitsLoss()
 
-    train(model1, optimizer, scheduler, criterion, df_data=df_train, cfg=train_cfg)
+    train(model1, optimizer, scheduler, criterion, df_data=df_train, cfg=train_cfg, mlflow_client = client, run_id = run_id)
+
+    client.set_terminated(run.info.run_id)
 
 if __name__ == "__main__" : 
     print('Device available now:', DEVICE)

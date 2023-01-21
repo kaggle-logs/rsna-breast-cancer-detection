@@ -10,6 +10,8 @@ from datetime import datetime
 from sklearn.model_selection import StratifiedKFold, GroupKFold
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 
+import mlflow
+
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
@@ -18,7 +20,7 @@ from config import TrainConfig, DEVICE
 from utility import data_to_device
 from dataset import RSNADataset
 
-def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig):
+def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig, mlflow_client, run_id ):
     print(">>>>> train start.")
     
     # Split in folds
@@ -103,6 +105,8 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
             # Compute Train Accuracy
             train_acc = correct / len(train_index)
             print(f"train loop fin, train_acc = {train_acc}")
+            mlflow_client.log_metric(run_id, f"{idx}-fold_train_acc", train_acc)
+            mlflow_client.log_metric(run_id, f"{idx}-fold_train_loss", train_losses)
 
             # train loop fin
             # -------------------------
