@@ -31,7 +31,8 @@ def main(cfg : DictConfig) -> None:
     # MLFlow system tags 
     # - https://mlflow.org/docs/latest/tracking.html?highlight=commit#system-tags
     if PLATFORM == "kaggle" : 
-        tags = {"mlflow.source.git.commit" : subprocess.check_output("cd rsna-breast-cancer-detection && git rev-parse HEAD".split()).strip().decode("utf-8") }
+        res = subprocess.run("cd rsna-breast-cancer-detection && git rev-parse HEAD", shell=True, capture_output=True)
+        tags = {"mlflow.source.git.commit" : res.stdout.decode("utf-8") }
     elif PLATFORM == "local":
         tags = {"mlflow.source.git.commit" : subprocess.check_output("git rev-parse HEAD".split()).strip().decode("utf-8") }
     run = client.create_run(exp_id, tags=tags)
