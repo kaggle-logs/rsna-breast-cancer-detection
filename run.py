@@ -9,7 +9,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # local
-from config import TrainConfig, DEVICE
+from config import TrainConfig, DEVICE, PLATFORM
 from model import ResNet50Network
 from utility import load_data, preprocess
 from train import train
@@ -30,7 +30,10 @@ def main(cfg : DictConfig) -> None:
     
     # MLFlow system tags 
     # - https://mlflow.org/docs/latest/tracking.html?highlight=commit#system-tags
-    tags = {"mlflow.source.git.commit" : subprocess.check_output("git rev-parse HEAD".split()).strip().decode("utf-8") }
+    if PLATFORM == "kaggle" : 
+        tags = {"mlflow.source.git.commit" : subprocess.check_output("cd rsna-breast-cancer-detection && git rev-parse HEAD".split()).strip().decode("utf-8") }
+    elif PLATFORM == "local":
+        tags = {"mlflow.source.git.commit" : subprocess.check_output("git rev-parse HEAD".split()).strip().decode("utf-8") }
     run = client.create_run(exp_id, tags=tags)
 
     client.log_metric(run.info.run_id, "fold", cfg.exp.fold)
