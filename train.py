@@ -102,11 +102,12 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 mem = psutil.virtual_memory()
                 print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
+
             # Compute Train Accuracy
             train_acc = correct / len(train_index)
             print(f"train loop fin, train_acc = {train_acc}")
-            mlflow_client.log_metric(run_id, f"{idx}-fold_train_acc", train_acc)
-            mlflow_client.log_metric(run_id, f"{idx}-fold_train_loss", train_losses)
+            mlflow_client.log_metric(run_id, f"{idx}fold_train_acc", train_acc)
+            mlflow_client.log_metric(run_id, f"{idx}fold_train_loss", train_losses)
 
             # train loop fin
             # -------------------------
@@ -132,7 +133,6 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                     del data, image, meta, targets, out, pred
                     gc.collect()
 
-                    break
 
                 # Calculate accuracy
                 valid_acc = accuracy_score(valid_data['cancer'].values, 
@@ -144,6 +144,9 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
                 # PRINT INFO
                 final_logs = 'Epoch: {}/{} | train loss: {:.4} | train acc: {:.3} | valid acc: {:.3} | valid roc: {:.3}'. format(epoch+1, cfg.epochs, train_losses, train_acc, valid_acc, valid_roc)
                 print(final_logs)
+
+                mlflow_client.log_metric(run_id, f"{idx}fold_valid_acc", valid_acc)
+                mlflow_client.log_metric(run_id, f"{idx}fold_valid_roc", valid_roc)
 
                 # === SAVE MODEL ===
 

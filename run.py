@@ -36,8 +36,9 @@ def main(cfg : DictConfig) -> None:
     elif PLATFORM == "local":
         tags = {"mlflow.source.git.commit" : subprocess.check_output("git rev-parse HEAD".split()).strip().decode("utf-8") }
     run = client.create_run(exp_id, tags=tags)
-
-    client.log_metric(run.info.run_id, "fold", cfg.exp.fold)
+    
+    for key, value in cfg.exp.items():
+        client.log_param(run.info.run_id, key, value)
 
     yaml = OmegaConf.to_yaml(cfg)
     print(yaml)
