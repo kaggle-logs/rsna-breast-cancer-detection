@@ -19,7 +19,7 @@ if __name__ == "__main__" :
         os.mkdir("tmp")
     except:
         pass
-    for patient_id in pathlib.Path("input/rsna-breast-cancer-detection/test_images").glob("*") : 
+    for patient_id in pathlib.Path("/kaggle/input/rsna-breast-cancer-detection/test_images").glob("*") : 
         try:
             os.mkdir(f"tmp/{patient_id.name}")
         except:
