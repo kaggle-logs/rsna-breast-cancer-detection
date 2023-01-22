@@ -93,7 +93,6 @@ class RSNADatasetPNG(Dataset):
         
         # Select path and read image
         image_path = self.dataframe['path'][index]
-        print(image_path)
         image = cv2.imread(image_path).astype(np.float32)
         
         # For this image also import .csv information
