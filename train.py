@@ -18,9 +18,16 @@ from torch.utils.data import Dataset, DataLoader, Subset
 # local
 from config import TrainConfig, DEVICE
 from utility import data_to_device
-from dataset import RSNADataset
+from dataset import RSNADataset, RSNADatasetPNG
 
-def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : TrainConfig, mlflow_client, run_id ):
+def train(model, 
+          optimizer, 
+          scheduler, 
+          criterion, 
+          df_data : pd.DataFrame, 
+          cfg : TrainConfig, 
+          mlflow_client, 
+          run_id : int ):
     print(">>>>> train start.")
     
     # Split in folds
@@ -45,10 +52,10 @@ def train(model, optimizer, scheduler, criterion, df_data : pd.DataFrame, cfg : 
         valid_data = df_data.iloc[valid_index].reset_index(drop=True)
 
         # Create Data instances
-        train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, 
-                                    is_train=True)
-        valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns,
-                                    is_train=True)
+        # train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
+        # valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
+        train_dataset = RSNADatasetPNG(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
+        valid_dataset = RSNADatasetPNG(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
         
         # Dataloaders
         train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, 

@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, normalize
 
 from config import INPUT_PATH, DEVICE, PLATFORM
 
-def load_data(f_name):
+def load_data(f_name, custom_dataset = None):
     # Add path column
     
     # Read in Data
@@ -15,9 +15,17 @@ def load_data(f_name):
     data["image_id"] = data["image_id"].apply(str)
 
     if PLATFORM == "kaggle" : 
-        data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] +".dcm"
+        if custom_dataset : 
+            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + f".{data_type}"
+        else :
+            data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] + ".dcm"
     elif PLATFORM == "local" : 
-        data["path"] = "input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
+        # modify the path for local test
+        #
+        if custom_dataset : 
+            data["path"] = f"rsna_dicom_to_png/10006/462822612.png"
+        else :
+            data["path"] = f"input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
 
     return data
     
