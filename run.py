@@ -67,7 +67,7 @@ def main(cfg : DictConfig) -> None:
 
     # Run the cell below to train
     # Ran it locally on all data, see the results below
-    df_train = load_data("train", custom_dataset=True)
+    df_train = load_data("train", custom_dataset="/kaggle/input/rsna-png-01")
     df_train = preprocess(df_train, is_train=True)
 
     # Tools
