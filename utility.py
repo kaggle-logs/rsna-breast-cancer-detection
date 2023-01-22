@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, normalize
 
 from config import INPUT_PATH, DEVICE, PLATFORM
 
-def load_data(f_name, custom_dataset = None):
+def load_data(f_name, custom_path = None):
     # Add path column
     
     # Read in Data
@@ -15,15 +15,15 @@ def load_data(f_name, custom_dataset = None):
     data["image_id"] = data["image_id"].apply(str)
 
     if PLATFORM == "kaggle" : 
-        if custom_dataset : 
-            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
+        if custom_path : 
+            data["path"] = custom_path + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
         else :
             data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] + ".dcm"
     elif PLATFORM == "local" : 
         # modify the path for local test
         #
-        if custom_dataset : 
-            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
+        if custom_path : 
+            data["path"] = custom_path + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
         else :
             data["path"] = f"input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
 
@@ -51,6 +51,10 @@ def preprocess(data, is_train):
     return data
 
 
-def data_to_device(data):
-    image, metadata, targets = data.values()
-    return image.to(DEVICE), metadata.to(DEVICE), targets.to(DEVICE)
+def data_to_device(data, is_train):
+    if is_train:
+        image, metadata, targets = data.values()
+        return image.to(DEVICE), metadata.to(DEVICE), targets.to(DEVICE)
+    else:
+        image, metadata = data.values()
+        return image.to(DEVICE), metadata.to(DEVICE)
