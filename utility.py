@@ -16,7 +16,7 @@ def load_data(f_name, custom_dataset = None):
 
     if PLATFORM == "kaggle" : 
         if custom_dataset : 
-            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + f".{data_type}"
+            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
         else :
             data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] + ".dcm"
     elif PLATFORM == "local" : 
