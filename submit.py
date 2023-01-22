@@ -35,7 +35,7 @@ if __name__ == "__main__" :
     
     # load trained model
     model = ResNet50Network(output_size=1, num_columns=4).to(DEVICE) 
-    model.load_state_dict(torch.load("Fold1_Epoch1_ValidAcc0.981_ROC0.507.pth", map_location=torch.device(DEVICE)))
+    model.load_state_dict(torch.load("rsnamodel/Fold1_Epoch1_ValidAcc0.981_ROC0.507.pth", map_location=torch.device(DEVICE)))
     model.eval()
 
     # dataset, dataloader
