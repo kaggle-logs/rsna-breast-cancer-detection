@@ -23,7 +23,7 @@ def load_data(f_name, custom_dataset = None):
         # modify the path for local test
         #
         if custom_dataset : 
-            data["path"] = f"rsna_dicom_to_png/10006/462822612.png"
+            data["path"] = custom_dataset + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
         else :
             data["path"] = f"input/rsna-breast-cancer-detection/train_images/10006/462822612.dcm"
 
