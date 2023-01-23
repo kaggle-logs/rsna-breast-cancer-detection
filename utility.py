@@ -30,7 +30,7 @@ def load_data(f_name, custom_path = None):
     return data
     
     
-def preprocess(data, is_train):
+def preprocess(data, is_train = True):
 
     if is_train : 
         # Keep only columns in test + target variable
@@ -51,7 +51,7 @@ def preprocess(data, is_train):
     return data
 
 
-def data_to_device(data, is_train):
+def data_to_device(data, is_train = True):
     if is_train:
         image, metadata, targets = data.values()
         return image.to(DEVICE), metadata.to(DEVICE), targets.to(DEVICE)
