@@ -34,7 +34,7 @@ if __name__ == "__main__" :
     df_test = preprocess(df_test, is_train=False)
     
     # load trained model
-    model = ResNet50Network(output_size=1, num_columns=4).to(DEVICE) 
+    model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
     if PLATFORM == "kaggle" : 
         model.load_state_dict(torch.load("/kaggle/input/rsnamodel/Fold1_Epoch1_ValidAcc0.981_ROC0.507.pth", map_location=torch.device(DEVICE)))
     elif PLATFORM == "local" : 

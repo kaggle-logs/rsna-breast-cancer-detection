@@ -10,13 +10,16 @@ from torchvision.models import resnet34, resnet50
 
 class ResNet50Network(nn.Module):
     
-    def __init__(self, output_size, num_columns):
+    def __init__(self, output_size, num_columns, is_train = True):
         super().__init__()
         self.num_columns = num_columns
         self.output_size = output_size
         
         # Define Feature part (IMAGE)
-        self.features = resnet50(pretrained=True) # 1000 neurons out
+        # if is_train = True, the pretrained weights will be downloaded.
+        # this competition cannot connect to internet, then the pretrained weights
+        # shouldnt be downloaded at the submit stage.
+        self.features = resnet50(pretrained=is_train) # 1000 neurons out
         # (metadata)
         self.csv = nn.Sequential(nn.Linear(self.num_columns, 500),
                                  nn.BatchNorm1d(500),
