@@ -74,7 +74,8 @@ def train(model,
             model.train()
 
             # For each batch                
-            for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
+            # for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
+            for data in train_loader:
                 # Save them to device
                 image, meta, targets = data_to_device(data)
 
@@ -129,7 +130,8 @@ def train(model,
 
             # Disables gradients (we need to be sure no optimization happens)
             with torch.no_grad():
-                for k, data in tqdm(enumerate(valid_loader)):
+                # for k, data in tqdm(enumerate(valid_loader)):
+                for data in valid_loader:
                     # Save them to device
                     image, meta, targets = data_to_device(data)
                     out = model(image, meta)
