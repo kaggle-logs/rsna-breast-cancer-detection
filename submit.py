@@ -48,10 +48,7 @@ if __name__ == "__main__" :
     
     # load trained model
     model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
-    if PLATFORM == "kaggle" : 
-        model.load_state_dict(torch.load(f"/kaggle/input/rsnamodel/{args.model}", map_location=torch.device(DEVICE)))
-    elif PLATFORM == "local" : 
-        model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
+    model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
     model.eval()
 
     # dataset, dataloader
