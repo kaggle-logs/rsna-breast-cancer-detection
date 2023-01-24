@@ -4,6 +4,7 @@ import cv2
 import pathlib 
 import torch
 from torch.utils.data import DataLoader
+import argparse
 
 # local
 from scripts.dicom_to_png import dicom_to_png
@@ -13,18 +14,30 @@ from config import DEVICE, PLATFORM
 from dataset import RSNADatasetPNG
 
 if __name__ == "__main__" : 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--model", type=str, required=True)
+    args = parser.parse_args()
     
     # DICOM --> PNG 
     try:
         os.mkdir("tmp")
     except:
         pass
-    for patient_id in pathlib.Path("/kaggle/input/rsna-breast-cancer-detection/test_images").glob("*") : 
+
+    if PLATFORM == "kaggle" : 
+        test_path = "/kaggle/input/rsna-breast-cancer-detection/test_images"
+    elif PLATFORM == "local" : 
+        test_path = "./input/rsna-breast-cancer-detection/test_images"
+
+    for patient_id in pathlib.Path(test_path).glob("*") : 
+        if patient_id.name in [".DS_Store",] : continue # macOS
         try:
             os.mkdir(f"tmp/{patient_id.name}")
         except:
             pass
         for fname in pathlib.Path(patient_id).glob("*") : 
+            if fname.name in [".DS_Store",] : continue # macOS
             img = dicom_to_png(fname)
             cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
     
@@ -36,9 +49,9 @@ if __name__ == "__main__" :
     # load trained model
     model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
     if PLATFORM == "kaggle" : 
-        model.load_state_dict(torch.load("/kaggle/input/rsnamodel/Fold1_Epoch1_ValidAcc0.981_ROC0.507.pth", map_location=torch.device(DEVICE)))
+        model.load_state_dict(torch.load(f"/kaggle/input/rsnamodel/{args.model}", map_location=torch.device(DEVICE)))
     elif PLATFORM == "local" : 
-        model.load_state_dict(torch.load("rsnamodel/Fold1_Epoch1_ValidAcc0.981_ROC0.507.pth", map_location=torch.device(DEVICE)))
+        model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
     model.eval()
 
     # dataset, dataloader
