@@ -108,7 +108,7 @@ def train(model,
 
                 torch.cuda.empty_cache()
                 mem = psutil.virtual_memory()
-                print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
+                # print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
 
             # Compute Train Accuracy
@@ -130,8 +130,7 @@ def train(model,
 
             # Disables gradients (we need to be sure no optimization happens)
             with torch.no_grad():
-                # for k, data in tqdm(enumerate(valid_loader)):
-                for data in valid_loader:
+                for k, data in enumerate(valid_loader):
                     # Save them to device
                     image, meta, targets = data_to_device(data)
                     out = model(image, meta)

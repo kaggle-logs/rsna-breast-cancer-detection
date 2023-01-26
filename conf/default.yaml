@@ -1,6 +1,6 @@
 exp:
     fold : 3 
-    epochs : 200
+    epochs : 50
     patience : 5 
     num_workers : 0 
     lr : 0.005
