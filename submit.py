@@ -44,6 +44,7 @@ if __name__ == "__main__" :
     # input path (png) 
     # any platform will have 'tmp' directory under the current dir
     df_test = load_data("test", custom_path="tmp")
+    prediction_id = df_test["patient_id"] + "_" + df_test["laterality"] 
     df_test = preprocess(df_test, is_train=False)
     
     # load trained model
@@ -63,10 +64,13 @@ if __name__ == "__main__" :
         out = model(image, meta)
         pred = torch.sigmoid(out)
 
-        predict_list.append(pred.detach().numpy())
+        predict_list.append(pred.detach().numpy().flatten()[0])
 
     df_submit = pd.DataFrame()
-    df_submit["patient_id"] = ["10008_L", "10008_R"]
-    df_submit["cancer"] = [ float((predict_list[0]+predict_list[1])/2), float((predict_list[2]+predict_list[3])/2)]
-
+    df_submit["prediction_id"] = prediction_id # add new column
+    df_submit["cancer"] = predict_list
+    df_submit = df_submit.groupby("prediction_id").max()
+    df_submit = df_submit.sort_index()
     df_submit.to_csv('submission.csv', index=False)
+
+    print(df_submit)
