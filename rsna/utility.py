@@ -60,11 +60,15 @@ def preprocess(data, is_train = True):
         data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path"]]
 
     # Encode categorical variables
+    # Avoid 'SettingWithCopyWarning'
     le_laterality = LabelEncoder()
     le_view = LabelEncoder()
-
-    data['laterality'] = le_laterality.fit_transform(data['laterality'])
-    data['view'] = le_view.fit_transform(data['view'])
+    encoded_laterality = le_laterality.fit_transform(data['laterality'])
+    encoded_view = le_view.fit_transform(data['view'])
+    data = data.drop("laterality", axis=1) 
+    data = data.drop("view", axis=1)
+    data["laterality"] = encoded_laterality
+    data["view"] = encoded_view
 
     # print("Number of missing values in Age:", data["age"].isna().sum())
     data['age'] = data['age'].fillna(int(data["age"].mean()))
