@@ -70,7 +70,7 @@ $ python setup.py install
 ### コードの整備
 - 事前のpip download & pip install（使い方がわからなかったのでconda installせず）
 - rsnagit として github のコードをデータセット化し、それを呼ぶ
-    - submit する前にデータセットの(ページ)[https://www.kaggle.com/datasets/kosuketakeda/rsnagit]へ飛び、ハンバーガーメニューから「Update」の選択。これにより最新のgitコミットが反映される
+    - submit する前にデータセットの[ページ](https://www.kaggle.com/datasets/kosuketakeda/rsnagit)へ飛び、ハンバーガーメニューから「Update」の選択。これにより最新のgitコミットが反映される
 - 学習済み重みもデータセットに格納して、そこから呼び出す
 
 ### ライブラリの整備
