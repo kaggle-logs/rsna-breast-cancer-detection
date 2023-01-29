@@ -16,9 +16,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
 # local
-from config import TrainConfig, DEVICE
-from utility import data_to_device
-from dataset import RSNADataset, RSNADatasetPNG
+from rsna.config import TrainConfig, DEVICE
+from rsna.utility import data_to_device
+from rsna.dataset import RSNADataset, RSNADatasetPNG
 
 def train(model, 
           optimizer, 
