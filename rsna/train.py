@@ -3,14 +3,9 @@ import numpy as np
 from tqdm import tqdm
 from time import time
 import gc
-import psutil
 import datetime as dtime
-import subprocess
 from datetime import datetime
 from sklearn.model_selection import StratifiedKFold, GroupKFold
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
-
-import mlflow
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
@@ -19,6 +14,8 @@ from torch.utils.data import Dataset, DataLoader, Subset
 from rsna.config import TrainConfig, DEVICE
 from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG
+from rsna.metrics import rsna_accuracy, rsna_roc
+
 
 def train(model, 
           optimizer, 
@@ -39,7 +36,8 @@ def train(model,
                                groups = df_data['patient_id'].tolist())
     
     # For each fold
-    for idx, (train_index, valid_index) in enumerate(k_folds):
+    for fold, (train_index, valid_index) in enumerate(k_folds):
+        print(f"-------- Fold #{fold}")
 
         # --- Create Instances ---
         # Best ROC score in this fold
@@ -58,130 +56,122 @@ def train(model,
         valid_dataset = RSNADatasetPNG(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
         
         # Dataloaders
-        train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, 
-                                  shuffle=True, num_workers=cfg.num_workers)
-        valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, 
-                                  shuffle=False, num_workers=cfg.num_workers)
+        train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers)
+        valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers) #### shuffle = False ####
 
         # === EPOCHS ===
         for epoch in range(cfg.epochs):
             print(f"Epoch # {epoch}")
-            correct = 0
-            train_losses = 0.0
 
-            # === TRAIN ===
+            # ------------------------------------------------------
+            #   TRAIN
+            # ------------------------------------------------------
+            # for monitorin
+            list_train_preds, list_train_targets = [], []
+            running_train_loss = 0.0
+
             # Sets the module in training mode.
             model.train()
 
             # For each batch                
             # for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
-            for data in train_loader:
+            for idx, data in enumerate(train_loader):
                 # Save them to device
+                #   - image   : [BS, C, W, H]
+                #   - meta    : [BS, 4]
+                #   - targets : [BS,] <-- add a dim with unsqueeze(1) if needed
                 image, meta, targets = data_to_device(data)
 
-                # Clear gradients first; very important
-                # usually done BEFORE prediction
+                # 1. clear gradients
                 optimizer.zero_grad()
-
-                # Forward
+                # 2. forward
+                #   - out : [BS, 1]
                 out = model(image, meta)
-
-                # Calc loss
+                # 3. calc loss
                 loss = criterion(out, targets.unsqueeze(1).float())
-
-                # Backward
+                # 4. Backward
                 loss.backward()
-
+                # 5. update weights
                 optimizer.step()
 
-                # --- Save information after this batch ---
-                # Save loss
-                train_losses += loss.item()
-                # From log probabilities to actual probabilities
-                train_preds = torch.round(torch.sigmoid(out)) # 0 and 1
-                # Number of correct predictions
-                correct += (train_preds.cpu() == targets.cpu().unsqueeze(1)).sum().item()
+                # Save information
+                #   - loss
+                running_train_loss += loss.item()
+                #   - acc
+                list_train_targets.extend(targets.cpu().numpy())
+                list_train_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy()) 
 
                 # clean memory
                 del data, image, meta, targets, out, loss
                 gc.collect()
-
                 torch.cuda.empty_cache()
-                mem = psutil.virtual_memory()
+                # mem = psutil.virtual_memory()
                 # print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
+                # if idx > 5: break # for debug
 
             # Compute Train Accuracy
-            train_acc = correct / len(train_index)
-            print(f"train loop fin, train_acc = {train_acc}")
-            mlflow_client.log_metric(run_id, f"{idx}fold_train_acc", train_acc)
-            mlflow_client.log_metric(run_id, f"{idx}fold_train_loss", train_losses)
+            train_acc = rsna_accuracy(list_train_targets, list_train_preds)
+            train_loss = running_train_loss / len(train_loader)
 
-            # train loop fin
-            # -------------------------
+            # mlflow logs
+            mlflow_client.log_metric(run_id, f"{idx}fold_train_acc", train_acc, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx}fold_train_loss", train_loss, step=epoch)
 
-            # === EVAL ===
+
+
+            # ------------------------------------------------------
+            #   EVAL
+            # ------------------------------------------------------
+            # for monitoring
+            list_valid_targets, list_valid_preds = [], []
+            running_valid_loss = 0.0
+
             # Sets the model in evaluation mode.
-            model.eval()
-
-            # Create matrix to store evaluation predictions (for accuracy)
-            valid_preds = torch.zeros(size = (len(valid_index), 1), 
-                                      device=DEVICE, dtype=torch.float32)
-
             # Disables gradients (we need to be sure no optimization happens)
+            model.eval()
             with torch.no_grad():
-                for k, data in enumerate(valid_loader):
+                for idx, data in enumerate(valid_loader):
                     # Save them to device
                     image, meta, targets = data_to_device(data)
+                    
+                    # infer
                     out = model(image, meta)
-                    pred = torch.sigmoid(out)
-                    valid_preds[k*image.shape[0] : k*image.shape[0] + image.shape[0]] = pred
+
+                    # calc loss
+                    loss = criterion(out, targets.unsqueeze(1).float())
+
+                    # Save information
+                    #   - loss
+                    running_valid_loss += loss.item()
+                    #   - acc
+                    list_valid_targets.extend(targets.cpu().numpy())
+                    list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
                    
                     # clean memory
-                    del data, image, meta, targets, out, pred
+                    del data, image, meta, targets, loss
                     gc.collect()
 
+                    # if idx > 5 : break # for debug
 
-                # Calculate accuracy
-                valid_acc = accuracy_score(valid_data['cancer'].values, 
-                                           torch.round(valid_preds.cpu()))
-                # Calculate ROC
-                valid_roc = roc_auc_score(valid_data['cancer'].values, 
-                                          valid_preds.cpu())
+                # Calculate metrics (acc, roc)
+                valid_loss = running_valid_loss/len(valid_loader)
+                valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
 
-                # PRINT INFO
-                final_logs = 'Epoch: {}/{} | train loss: {:.4} | train acc: {:.3} | valid acc: {:.3} | valid roc: {:.3}'. format(epoch+1, cfg.epochs, train_losses, train_acc, valid_acc, valid_roc)
-                print(final_logs)
+                # print
+                logs_per_epoch = f'Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}'
+                print(logs_per_epoch)
 
-                mlflow_client.log_metric(run_id, f"{idx}fold_valid_acc", valid_acc)
-                mlflow_client.log_metric(run_id, f"{idx}fold_valid_roc", valid_roc)
-
-                # === SAVE MODEL ===
+                # mlflow logs
+                mlflow_client.log_metric(run_id, f"{idx}fold_valid_acc", valid_acc, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx}fold_valid_loss", valid_loss, step=epoch)
 
                 # Update scheduler (for learning_rate)
-                scheduler.step(valid_roc)
-                # Name the model
-                model_name = f"Fold{idx+1}_Epoch{epoch+1}_ValidAcc{valid_acc:.3f}_ROC{valid_roc:.3f}.pth"
+                scheduler.step(valid_loss)
 
-                # Update best_roc
-                if not best_roc: # If best_roc = None
-                    best_roc = valid_roc
-                    torch.save(model.state_dict(), model_name)
-                    continue
-
-                if valid_roc > best_roc:
-                    best_roc = valid_roc
-                    # Reset patience (because we have improvement)
-                    patience_f = cfg.patience
-                    torch.save(model.state_dict(), model_name)
-                else:
-                    # Decrease patience (no improvement in ROC)
-                    patience_f = patience_f - 1
-                    if patience_f == 0:
-                        stop_logs = 'Early stopping (no improvement since 3 models) | Best ROC: {}'.\
-                                    format(best_roc)
-                        print(stop_logs)
-                        break
+                # model save
+                model_name = f"model_fold{idx+1}_epoch{epoch+1}_validacc{valid_acc:.3f}.pth"
+                torch.save(model.state_dict(), model_name)
 
         del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()

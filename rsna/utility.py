@@ -7,6 +7,9 @@ from tqdm import tqdm
 import dicomsdl
 import pydicom
 
+import numpy as np
+import random
+import torch
 import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold, GroupKFold
@@ -14,6 +17,15 @@ from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 from sklearn.preprocessing import LabelEncoder, normalize
 
 from rsna.config import INPUT_PATH, DEVICE, PLATFORM
+
+def fix_seed(SEED=1993):
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 def load_data(f_name, custom_path = None):
     # Add path column

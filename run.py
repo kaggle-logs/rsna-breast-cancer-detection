@@ -11,7 +11,7 @@ from omegaconf import DictConfig, OmegaConf
 # local
 from rsna.config import TrainConfig, DEVICE, PLATFORM
 from rsna.model import ResNet50Network
-from rsna.utility import load_data, preprocess
+from rsna.utility import load_data, preprocess, fix_seed
 from rsna.train import train
 
 # set_seed()
@@ -83,4 +83,5 @@ def main(cfg : DictConfig) -> None:
 
 if __name__ == "__main__" : 
     print('Device available now:', DEVICE)
+    fix_seed()
     main()
