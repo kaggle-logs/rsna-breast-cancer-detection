@@ -68,8 +68,10 @@ $ python setup.py install
 
 を事前に行う必要がある。以上の事前準備をした段階で
 
-- submitノートブックの実行 [nb10_RSNA_submit_v2](https://www.kaggle.com/code/kosuketakeda/nb10-rsna-submit-v2)
-- 完了後、「Submit to Competition」の実行
+- submitノートブックの編集 [nb10_RSNA_submit_v2](https://www.kaggle.com/code/kosuketakeda/nb10-rsna-submit-v2)
+  - rsnagit の「Check for updates」の実行、最新版を使用する
+  - Save
+- ジョブ完了後、「Submit to Competition」の実行
 
 ### コードの整備
 
