@@ -170,8 +170,9 @@ def train(model,
                 scheduler.step(valid_loss)
 
                 # model save
-                model_name = f"model_fold{idx+1}_epoch{epoch+1}_validacc{valid_acc:.3f}.pth"
-                torch.save(model.state_dict(), model_name)
+                if epoch % 10 == 0 :
+                    model_name = f"model_fold{idx+1}_epoch{epoch+1}_validacc{valid_acc:.3f}.pth"
+                    torch.save(model.state_dict(), model_name)
 
         del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()
