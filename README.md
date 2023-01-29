@@ -62,16 +62,21 @@ $ python setup.py install
 ## Submit 
 
 このコンペでは Internet off でnotebookが走る必要があるので、
-1. 最新版コードの整備
-2. データセットの整備
-3. ライブラリの整備
-を事前に行う必要がある
+1. 最新版コードの整備 [rsnagit](https://www.kaggle.com/datasets/kosuketakeda/rsnagit)
+2. データセットの整備 
+3. ライブラリの整備 [rsnalibrary](https://www.kaggle.com/code/kosuketakeda/nb11-rsna-library)
+
+を事前に行う必要がある。以上の事前準備をした段階で
+
+- submitノートブックの実行 [nb10_RSNA_submit_v2](https://www.kaggle.com/code/kosuketakeda/nb10-rsna-submit-v2)
+- 完了後、「Submit to Competition」の実行
 
 ### コードの整備
-- 事前のpip download & pip install（使い方がわからなかったのでconda installせず）
-- rsnagit として github のコードをデータセット化し、それを呼ぶ
-    - submit する前にデータセットの[ページ](https://www.kaggle.com/datasets/kosuketakeda/rsnagit)へ飛び、ハンバーガーメニューから「Update」の選択。これにより最新のgitコミットが反映される
-- 学習済み重みもデータセットに格納して、そこから呼び出す
+
+- データセットの[rsnagit](https://www.kaggle.com/datasets/kosuketakeda/rsnagit)へ飛び、ハンバーガーメニューから「Update」の選択。最新のgitコミットの反映
+
+- ※注意事項
+  - conda の事前 download はわからないので、condaでしか入らないライブラリは極力使用しないこと
 
 ### ライブラリの整備
 
