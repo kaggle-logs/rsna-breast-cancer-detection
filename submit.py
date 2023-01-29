@@ -7,11 +7,10 @@ from torch.utils.data import DataLoader
 import argparse
 
 # local
-from scripts.dicom_to_png import dicom_to_png
-from utility import load_data, preprocess, data_to_device
-from model import ResNet50Network
-from config import DEVICE, PLATFORM
-from dataset import RSNADatasetPNG
+from rsna.utility import load_data, preprocess, data_to_device, dicom2png
+from rsna.model import ResNet50Network
+from rsna.config import DEVICE, PLATFORM
+from rsna.dataset import RSNADatasetPNG
 
 if __name__ == "__main__" : 
 
@@ -28,7 +27,7 @@ if __name__ == "__main__" :
     if PLATFORM == "kaggle" : 
         test_path = "/kaggle/input/rsna-breast-cancer-detection/test_images"
     elif PLATFORM == "local" : 
-        test_path = "./input/rsna-breast-cancer-detection/test_images"
+        test_path = "/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/input/rsna-breast-cancer-detection/test_images"
 
     for patient_id in pathlib.Path(test_path).glob("*") : 
         if patient_id.name in [".DS_Store",] : continue # macOS
@@ -38,7 +37,7 @@ if __name__ == "__main__" :
             pass
         for fname in pathlib.Path(patient_id).glob("*") : 
             if fname.name in [".DS_Store",] : continue # macOS
-            img = dicom_to_png(fname)
+            img = dicom2png(str(fname))
             cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
     
     # input path (png) 

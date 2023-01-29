@@ -9,10 +9,10 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # local
-from config import TrainConfig, DEVICE, PLATFORM
-from model import ResNet50Network
-from utility import load_data, preprocess
-from train import train
+from rsna.config import TrainConfig, DEVICE, PLATFORM
+from rsna.model import ResNet50Network
+from rsna.utility import load_data, preprocess
+from rsna.train import train
 
 # set_seed()
 
@@ -67,8 +67,8 @@ def main(cfg : DictConfig) -> None:
 
     # Run the cell below to train
     # Ran it locally on all data, see the results below
-    df_train = load_data("train", custom_path="/kaggle/input/rsnapng/rsna_dicom_to_png")
-    # df_train = load_data("train", custom_dataset="rsna_dicom_to_png")
+    # df_train = load_data("train", custom_path="/kaggle/input/rsnapng/rsna_dicom2png")
+    df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/dicom2png")
     df_train = preprocess(df_train, is_train=True)
 
     # Tools

@@ -4,3 +4,6 @@ __pycache__
 .vscode
 .python-version
 *.zip
+*.csv
+*.log
+mlruns
