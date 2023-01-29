@@ -71,6 +71,6 @@ if __name__ == "__main__" :
     df_submit["cancer"] = predict_list
     df_submit = df_submit.groupby("prediction_id").max()
     df_submit = df_submit.sort_index()
-    df_submit.to_csv('submission.csv', index=False)
+    df_submit.to_csv('submission.csv', index=True)
 
     print(df_submit)
