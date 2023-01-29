@@ -53,9 +53,14 @@ $ python setup.py install
 
 ## Train
 
-1. コードをローカルで修正し、かんたんな動作試験を実施
+### 学習時
+1. コードをローカルで修正し、動作試験を実施
 2. git push
-3. Kaggle の学習用ノートブックを実行（`nb08_RSNA_train_v1`）
+3. Kaggle の学習用ノートブックを実行（[nb08_RSNA_train_v1](https://www.kaggle.com/code/kosuketakeda/nb08-rsna-train-png-v1)）
+   1. 学習時は internet on なので、常に最新コードを git から pull してくるようにしている
+
+### 学習終了 & 評価する時
+
 4. 学習終了後、GCS に転送されている `mlruns` のディレクトリをローカルに持ってくる （`gsutil cp -r gs://kaggle-kabupen-rsna-bucket/mlruns .`）
 5. ローカルで `mlflow ui` の実施、MLFlow 上で結果を眺める
 
