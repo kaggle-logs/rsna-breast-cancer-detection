@@ -5,6 +5,7 @@ import pathlib
 import torch
 from torch.utils.data import DataLoader
 import argparse
+from joblib import Parallel, delayed
 
 # local
 from rsna.utility import load_data, preprocess, data_to_device, dicom2png
@@ -29,16 +30,23 @@ if __name__ == "__main__" :
     elif PLATFORM == "local" : 
         test_path = "/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/input/rsna-breast-cancer-detection/test_images"
 
+
+    def process(fname):
+        img = dicom2png(str(fname))
+        cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
+
     for patient_id in pathlib.Path(test_path).glob("*") : 
         if patient_id.name in [".DS_Store",] : continue # macOS
         try:
             os.mkdir(f"tmp/{patient_id.name}")
         except:
             pass
+        # prepare file name list for Parallel
+        fname_list = []
         for fname in pathlib.Path(patient_id).glob("*") : 
             if fname.name in [".DS_Store",] : continue # macOS
-            img = dicom2png(str(fname))
-            cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
+            fname_list.append(fname)
+        _ = Parallel(n_jobs=4)(delayed(process)(fname) for fname in fname_list)
     
     # input path (png) 
     # any platform will have 'tmp' directory under the current dir
@@ -53,7 +61,7 @@ if __name__ == "__main__" :
 
     # dataset, dataloader
     test_dataset = RSNADatasetPNG(df_test, 0, 0, csv_columns=["laterality", "view", "age", "implant"], is_train=False)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=1)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
     # predict
     predict_list = []
@@ -63,7 +71,7 @@ if __name__ == "__main__" :
         out = model(image, meta)
         pred = torch.sigmoid(out)
 
-        predict_list.append(pred.detach().numpy().flatten()[0])
+        predict_list.extend(pred.detach().numpy().flatten())
 
     df_submit = pd.DataFrame()
     df_submit["prediction_id"] = prediction_id # add new column
