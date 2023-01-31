@@ -11,10 +11,10 @@ import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
 # local
-from rsna.config import TrainConfig, DEVICE
+from rsna.config import DEVICE
 from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG
-from rsna.metrics import rsna_accuracy, rsna_roc
+from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta
 
 
 def train(model, 
@@ -22,7 +22,7 @@ def train(model,
           scheduler, 
           criterion, 
           df_data : pd.DataFrame, 
-          cfg : TrainConfig, 
+          cfg, 
           mlflow_client, 
           run_id : int ):
     print(">>>>> train start.")
@@ -36,14 +36,8 @@ def train(model,
                                groups = df_data['patient_id'].tolist())
     
     # For each fold
-    for fold, (train_index, valid_index) in enumerate(k_folds):
-        print(f"-------- Fold #{fold}")
-
-        # --- Create Instances ---
-        # Best ROC score in this fold
-        best_roc = None
-        # Reset patience before every fold
-        patience_f = cfg.patience
+    for idx_fold, (train_index, valid_index) in enumerate(k_folds):
+        print(f"-------- Fold #{idx_fold}")
 
         # --- Read in Data ---
         train_data = df_data.iloc[train_index].reset_index(drop=True)
@@ -61,7 +55,7 @@ def train(model,
 
         # === EPOCHS ===
         for epoch in range(cfg.epochs):
-            print(f"Epoch # {epoch}")
+            # print(f"Epoch # {epoch}")
 
             # ------------------------------------------------------
             #   TRAIN
@@ -108,15 +102,18 @@ def train(model,
                 # mem = psutil.virtual_memory()
                 # print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
-                # if idx > 5: break # for debug
+                if cfg.debug : 
+                    if idx > 5: break # for debug
 
             # Compute Train Accuracy
             train_acc = rsna_accuracy(list_train_targets, list_train_preds)
             train_loss = running_train_loss / len(train_loader)
+            train_pfbeta = pfbeta(list_train_targets, list_train_preds, 1)
 
             # mlflow logs
-            mlflow_client.log_metric(run_id, f"{idx}fold_train_acc", train_acc, step=epoch)
-            mlflow_client.log_metric(run_id, f"{idx}fold_train_loss", train_loss, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_acc", train_acc, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_loss", train_loss, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_pfbeta", train_pfbeta, step=epoch)
 
 
 
@@ -152,27 +149,30 @@ def train(model,
                     del data, image, meta, targets, loss
                     gc.collect()
 
-                    # if idx > 5 : break # for debug
+                    if cfg.debug : 
+                        if idx > 5 : break
 
                 # Calculate metrics (acc, roc)
                 valid_loss = running_valid_loss/len(valid_loader)
                 valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
+                valid_pfbeta = pfbeta(list_valid_targets, list_valid_preds, 1)
 
                 # print
-                logs_per_epoch = f'Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}'
+                logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
                 print(logs_per_epoch)
 
                 # mlflow logs
-                mlflow_client.log_metric(run_id, f"{idx}fold_valid_acc", valid_acc, step=epoch)
-                mlflow_client.log_metric(run_id, f"{idx}fold_valid_loss", valid_loss, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_loss", valid_loss, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_pfbeta", valid_pfbeta, step=epoch)
 
                 # Update scheduler (for learning_rate)
                 scheduler.step(valid_loss)
 
-                # model save
-                if epoch % 10 == 0 :
-                    model_name = f"model_fold{idx+1}_epoch{epoch+1}_validacc{valid_acc:.3f}.pth"
-                    torch.save(model.state_dict(), model_name)
+            # model save
+            if epoch % 10 == 0 :
+                model_name = f"model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
+                torch.save(model.state_dict(), model_name)
 
         del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()

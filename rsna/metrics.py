@@ -11,3 +11,28 @@ def rsna_roc(y_true : list, y_pred : list):
     # if y_true has only on class, the roc_auc_score fails.
     # please be careful.
     return roc_auc_score(y_true, y_pred)
+
+def pfbeta(labels, predictions, beta):
+    y_true_count = 0
+    ctp = 0
+    cfp = 0
+
+    for idx in range(len(labels)):
+        prediction = min(max(predictions[idx], 0), 1)
+        if (labels[idx]):
+            y_true_count += 1
+            ctp += prediction
+        else:
+            cfp += prediction
+
+    # sanity check
+    if y_true_count == 0 : return 0
+
+    beta_squared = beta * beta
+    c_precision = ctp / (ctp + cfp)
+    c_recall = ctp / y_true_count
+    if (c_precision > 0 and c_recall > 0):
+        result = (1 + beta_squared) * (c_precision * c_recall) / (beta_squared * c_precision + c_recall)
+        return result
+    else:
+        return 0

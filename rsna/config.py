@@ -18,7 +18,6 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 @dataclass
 class TrainConfig:
     fold : int
-    patience : int 
     epochs : int
     num_workers : int
     lr : float
