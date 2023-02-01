@@ -13,26 +13,39 @@ from albumentations import (ToFloat, Normalize, VerticalFlip, HorizontalFlip, Co
 from albumentations.pytorch import ToTensorV2
 
 
-class RSNADataset(Dataset):
-    
-    def __init__(self, dataframe, vertical_flip, horizontal_flip, csv_columns,
-                 is_train=True):
-        self.dataframe = dataframe
-        self.is_train = is_train
-        self.vertical_flip = vertical_flip
-        self.horizontal_flip = horizontal_flip
-        self.csv_columns = csv_columns
-        
+class Transform():
+    def __init__(self, is_train, **kwargs):
         # Data Augmentation (custom for each dataset type)
         if is_train:
-            self.transform = Compose([RandomResizedCrop(height=224, width=224),
-                                      ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
-                                      HorizontalFlip(p = self.horizontal_flip),
-                                      VerticalFlip(p = self.vertical_flip),
-                                      ToTensorV2()])
+            self.transform = Compose([
+                RandomResizedCrop(height=224, width=224),
+                ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
+                HorizontalFlip(p = kwargs["horizontal_flip"]),
+                VerticalFlip(p = kwargs["vertical_flip"]),
+                Normalize(
+                      mean=[0.485, 0.456, 0.406],
+                      std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ])
         else:
-            self.transform = Compose([ToTensorV2()])
-            
+            self.transform = Compose([
+                Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]),
+                ToTensorV2(),
+            ])
+    
+    def get(self):
+        return self.transform
+
+
+class RSNADataset(Dataset):
+    
+    def __init__(self, dataframe, transform, csv_columns, is_train=True):
+        self.dataframe = dataframe
+        self.is_train = is_train
+        self.csv_columns = csv_columns
+        self.transform = transform.get()
             
     def __len__(self):
         return len(self.dataframe)
@@ -65,23 +78,11 @@ class RSNADataset(Dataset):
 
 class RSNADatasetPNG(Dataset):
     
-    def __init__(self, dataframe, vertical_flip, horizontal_flip, csv_columns,
-                 is_train=True):
+    def __init__(self, dataframe, transform, csv_columns, is_train=True):
         self.dataframe = dataframe
         self.is_train = is_train
-        self.vertical_flip = vertical_flip
-        self.horizontal_flip = horizontal_flip
         self.csv_columns = csv_columns
-        
-        # Data Augmentation (custom for each dataset type)
-        if is_train:
-            self.transform = Compose([RandomResizedCrop(height=224, width=224),
-                                      ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
-                                      HorizontalFlip(p = self.horizontal_flip),
-                                      VerticalFlip(p = self.vertical_flip),
-                                      ToTensorV2()])
-        else:
-            self.transform = Compose([ToTensorV2()])
+        self.transform = transform.get()
             
             
     def __len__(self):

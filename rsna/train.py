@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader, Subset
 # local
 from rsna.config import DEVICE
 from rsna.utility import data_to_device
-from rsna.dataset import RSNADataset, RSNADatasetPNG
+from rsna.dataset import RSNADataset, RSNADatasetPNG, Transform
 from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta
 
 
@@ -34,7 +34,19 @@ def train(model,
     k_folds = group_fold.split(X = np.zeros(len(df_data)), 
                                y = df_data['cancer'], 
                                groups = df_data['patient_id'].tolist())
-    
+
+    # 前処理関数の定義 (for Dataset)
+    train_transform = Transform(
+        horizontal_flip=cfg.horizontal_flip, 
+        vertical_flip=cfg.vertical_flip,
+        is_train=True
+    ) 
+    valid_transform = Transform(
+        horizontal_flip=cfg.horizontal_flip, 
+        vertical_flip=cfg.vertical_flip,
+        is_train=False
+    ) 
+
     # For each fold
     for idx_fold, (train_index, valid_index) in enumerate(k_folds):
         print(f"-------- Fold #{idx_fold}")
@@ -46,8 +58,8 @@ def train(model,
         # Create Data instances
         # train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
         # valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
-        train_dataset = RSNADatasetPNG(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
-        valid_dataset = RSNADatasetPNG(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
+        train_dataset = RSNADatasetPNG(train_data, train_transform, cfg.csv_columns, is_train=True)
+        valid_dataset = RSNADatasetPNG(valid_data, valid_transform, cfg.csv_columns, is_train=True)
         
         # Dataloaders
         train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers)

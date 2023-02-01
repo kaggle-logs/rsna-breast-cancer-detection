@@ -51,3 +51,4 @@ class ResNet50Network(nn.Module):
         if prints: print('Out shape:', out.shape)
         
         return out
+
