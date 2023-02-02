@@ -9,7 +9,7 @@ from rsna.utility import dicom2png, PLATFORM
 
 def run(size:int):
     if PLATFORM == "kaggle" : 
-        output_path = "/kaggle/working/dicom2png/"
+        output_path = f"/kaggle/working/dicom2png_{size}/"
         search_path = "/kaggle/input/rsna-breast-cancer-detection/train_images/"
     elif PLATFORM == "local" : 
         output_path = "./tmp_dicom2png"
