@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.model_selection import StratifiedKFold, GroupKFold
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
 from sklearn.preprocessing import LabelEncoder, normalize
+from sklearn.utils import resample
 
 from rsna.config import INPUT_PATH, DEVICE, PLATFORM
 
@@ -56,6 +57,12 @@ def preprocess(data, is_train = True):
     if is_train : 
         # Keep only columns in test + target variable
         data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path", "cancer"]]
+        data_cancer_0 = data[data["cancer"]==0]
+        data_cancer_1 = data[data["cancer"]==1]
+        # oversampling 
+        #   - replace : 重複を許す (True)
+        data_cancer_1_over = resample(data_cancer_1, replace=True, n_samples=len(data_cancer_0), random_state=27)
+        data = pd.concat([data_cancer_0, data_cancer_1_over])
     else :
         data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path"]]
 
@@ -72,8 +79,11 @@ def preprocess(data, is_train = True):
 
     # print("Number of missing values in Age:", data["age"].isna().sum())
     data['age'] = data['age'].fillna(int(data["age"].mean()))
-    
+
+
     return data
+
+
 
 
 def data_to_device(data, is_train = True):

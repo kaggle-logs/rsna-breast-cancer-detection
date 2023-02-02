@@ -10,7 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 
 # local
 from rsna.config import TrainConfig, DEVICE, PLATFORM
-from rsna.model import ResNet50Network
+from rsna.model import ResNet50Network, EfficientNet
 from rsna.utility import load_data, preprocess, fix_seed
 from rsna.train import train
 
@@ -43,8 +43,8 @@ def main(cfg : DictConfig) -> None:
     yaml = OmegaConf.to_yaml(cfg)
     print(yaml)
 
-    model1 = ResNet50Network(output_size=1,
-                             num_columns=4).to(DEVICE)
+    # model = ResNet50Network(output_size=1, num_columns=4).to(DEVICE)
+    model = EfficientNet(pretrained=True).to(DEVICE)
 
     # ------------------
 
@@ -54,16 +54,16 @@ def main(cfg : DictConfig) -> None:
     if PLATFORM == "kaggle" : 
         df_train = load_data("train", custom_path="/kaggle/input/rsnapng/rsna_dicom_to_png")
     elif PLATFORM == "local" : 
-        df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/dicom2png")
+        df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256")
     df_train = preprocess(df_train, is_train=True)
 
     # Tools
     # Optimizer/ Scheduler/ Criterion
-    optimizer = torch.optim.Adam(model1.parameters(), lr = 0.005, weight_decay=0.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.005, weight_decay=0.0)
     scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', patience=1, verbose=True, factor=0.4)
     criterion = nn.BCEWithLogitsLoss()
 
-    train(model1, optimizer, scheduler, criterion, df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
+    train(model, optimizer, scheduler, criterion, df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
 
     client.set_terminated(run.info.run_id)
 

@@ -4,9 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import FloatTensor, LongTensor
 from torch.utils.data import Dataset, DataLoader, Subset
-
 from torchvision.models import resnet34, resnet50
 
+import timm
 
 class ResNet50Network(nn.Module):
     
@@ -52,3 +52,37 @@ class ResNet50Network(nn.Module):
         
         return out
 
+
+class EfficientNet(nn.Module):
+
+    def __init__(self, model_name="efficientnet_b0", pretrained=False, out_dim=1, only_head=False):
+        super().__init__()
+        
+        self.backbone = timm.create_model(model_name, pretrained=pretrained, in_chans=3)
+        # self.avgpool2d = nn.AvgPool2d()
+        self.dropout = nn.Dropout(p=0.3)
+        self.dense1 = nn.Linear(self.backbone.classifier.out_features, 500)
+        self.dense2 = nn.Linear(500, out_dim)
+        
+        # ヘッドだけ学習させるなら
+        if only_head : 
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+        
+    def forward(self, x, meta, verbose=False):
+        # ConvNextV2
+        if verbose: print("-- input : ", x.shape)
+            
+        x = self.backbone(x)
+        if verbose: print(x.shape) # (BS, out_features) ... Effnet はデフォルトで10000次元出力
+            
+        x = self.dropout(x)
+        if verbose: print(x.shape)
+            
+        x = self.dense1(x)
+        if verbose: print(x.shape)
+            
+        x = self.dense2(x)
+        if verbose: print(x.shape)
+
+        return x

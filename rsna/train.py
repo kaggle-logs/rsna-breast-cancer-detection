@@ -62,8 +62,8 @@ def train(model,
         valid_dataset = RSNADatasetPNG(valid_data, valid_transform, cfg.csv_columns, is_train=True)
         
         # Dataloaders
-        train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers)
-        valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers) #### shuffle = False ####
+        train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
+        valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers, pin_memory=True) #### shuffle = False ####
 
         # === EPOCHS ===
         for epoch in range(cfg.epochs):
@@ -115,7 +115,7 @@ def train(model,
                 # print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
                 if cfg.debug : 
-                    if idx > 5: break # for debug
+                    break # for debug
 
             # Compute Train Accuracy
             train_acc = rsna_accuracy(list_train_targets, list_train_preds)
@@ -162,7 +162,7 @@ def train(model,
                     gc.collect()
 
                     if cfg.debug : 
-                        if idx > 5 : break
+                        break
 
                 # Calculate metrics (acc, roc)
                 valid_loss = running_valid_loss/len(valid_loader)
