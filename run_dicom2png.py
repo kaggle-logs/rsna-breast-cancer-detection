@@ -12,7 +12,7 @@ def run(size:int):
         output_path = "/kaggle/working/dicom2png/"
         search_path = "/kaggle/input/rsna-breast-cancer-detection/train_images/"
     elif PLATFORM == "local" : 
-        output_path = "./dicom2png"
+        output_path = "./tmp_dicom2png"
         search_path = "./input/rsna-breast-cancer-detection/train_images/"
 
     try:
@@ -30,11 +30,10 @@ def run(size:int):
             pass
             
         def for_joblib(fname):
-            for dicom in pathlib.Path(f"{str(dir_patient)}").glob("*.dcm"):
-                img = dicom2png(str(dicom), PNG_SIZE=(size, size))
-                cv2.imwrite(f"{output_path}/{patient_id}/{dicom.name}".replace("dcm", "png"), img)
+            img = dicom2png(str(fname), PNG_SIZE=(size, size))
+            cv2.imwrite(f"{output_path}/{patient_id}/{fname.name}".replace("dcm", "png"), img)
 
-        joblib.Parallel(n_jobs=-1)(joblib.delayed(for_joblib)(str(dicom)) for dicom in pathlib.Path(f"{str(dir_patient)}").glob("*.dcm"))
+        joblib.Parallel(n_jobs=-1)(joblib.delayed(for_joblib)(dicom) for dicom in pathlib.Path(f"{str(dir_patient)}").glob("*.dcm"))
 
 if __name__ == "__main__" : 
 
