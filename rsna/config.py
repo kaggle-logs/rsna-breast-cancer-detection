@@ -1,6 +1,8 @@
 import os
 import torch
 from dataclasses import dataclass
+import torch_xla
+import torch_xla.core.xla_model as xm
 
 if os.path.exists("/kaggle") : 
     PLATFORM = "kaggle"
@@ -12,8 +14,14 @@ if PLATFORM == "kaggle" :
 elif PLATFORM == "local" : 
     INPUT_PATH = "./input/rsna-breast-cancer-detection/"
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+TPU = False
+if torch.cuda.is_available():
+    DEVICE = torch.device('cuda')
+elif xm.xla_device():
+    DEVICE = xm.xla_device()
+    TPU = True
+else:
+    DEVICE = 'cpu'
 
 @dataclass
 class TrainConfig:

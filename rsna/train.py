@@ -10,8 +10,14 @@ from sklearn.model_selection import StratifiedKFold, GroupKFold
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
+# for TPU
+if DEVICE == "TPU":
+    import torch_xla.core.xla_model as xm
+    import torch_xla.distributed.parallel_loader as pl
+    import torch_xla.distributed.xla_multiprocessing as xmp
+
 # local
-from rsna.config import DEVICE
+from rsna.config import DEVICE, TPU
 from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG, Transform
 from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta
@@ -62,8 +68,14 @@ def train(model,
         valid_dataset = RSNADatasetPNG(valid_data, valid_transform, cfg.csv_columns, is_train=True)
         
         # Dataloaders
-        train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
-        valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers, pin_memory=True) #### shuffle = False ####
+        if TPU:
+            train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal(), shuffle=True)
+            valid_sampler = torch.utils.data.distributed.DistributedSampler(valid_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal(), shuffle=False) 
+            train_loader = DataLoader( train_dataset, batch_size=cfg.batch_size_1, num_workers=cfg.num_workers, pin_memory=True, sampler=train_sampler)
+            valid_loader = DataLoader( valid_dataset, batch_size=cfg.batch_size_2, num_workers=cfg.num_workers, pin_memory=True, sampler=valid_sampler)
+        else :
+            train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
+            valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers, pin_memory=True) #### shuffle = False ####
 
         # === EPOCHS ===
         for epoch in range(cfg.epochs):
@@ -98,7 +110,10 @@ def train(model,
                 # 4. Backward
                 loss.backward()
                 # 5. update weights
-                optimizer.step()
+                if TPU : 
+                    xm.optimizer_step(optimizer,barrier=True)
+                else : 
+                    optimizer.step()
 
                 # Save information
                 #   - loss
@@ -184,7 +199,10 @@ def train(model,
             # model save
             if epoch % 10 == 0 :
                 model_name = f"model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
-                torch.save(model.state_dict(), model_name)
+                if TPU:
+                    xm.save(model.state_dict(), model_name)
+                else:
+                    torch.save(model.state_dict(), model_name)
 
         del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()
