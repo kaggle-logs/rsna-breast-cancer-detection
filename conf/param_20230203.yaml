@@ -1,0 +1,15 @@
+fold : 3 
+epochs : 20
+num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
+lr : 0.005
+wd : 0.0
+lr_patience : 1 
+lr_factor : 0.4
+batch_size_1 : 32
+batch_size_2 : 16
+vertical_flip : 0.5
+horizontal_flip : 0.5
+output_size : 1
+csv_columns : ["laterality", "view", "age", "implant"]
+input_path : "/kaggle/input/dicom2png512x512/dicom2png_512"
+debug : False
