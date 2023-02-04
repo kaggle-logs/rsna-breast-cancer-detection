@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import FloatTensor, LongTensor
 from torch.utils.data import Dataset, DataLoader, Subset
-# import torchvision
-# from torchvision.models import resnet34, resnet50
+import torchvision
+from torchvision.models import resnet34, resnet50
 
 import timm
 
@@ -58,7 +58,7 @@ class EfficientNet(nn.Module):
     def __init__(self, model_name="efficientnet_b0", pretrained=False, out_dim=1, only_head=False):
         super().__init__()
         
-        self.backbone = timm.create_model(model_name, pretrained=pretrained, in_chans=3)
+        self.backbone = timm.create_model(model_name, pretrained=pretrained, in_chans=1)
         # self.avgpool2d = nn.AvgPool2d()
         self.dropout = nn.Dropout(p=0.3)
         self.dense1 = nn.Linear(self.backbone.classifier.out_features, 500)

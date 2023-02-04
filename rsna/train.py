@@ -10,14 +10,17 @@ from sklearn.model_selection import StratifiedKFold, GroupKFold
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 
-# for TPU
-if DEVICE == "TPU":
-    import torch_xla.core.xla_model as xm
 
 # local
 from rsna.config import DEVICE, TPU
+
+# for TPU
+if TPU:
+    import torch_xla.core.xla_model as xm
+
 from rsna.utility import data_to_device
-from rsna.dataset import RSNADataset, RSNADatasetPNG, Transform
+from rsna.dataset import RSNADataset, RSNADatasetPNG
+from rsna.preprocess import Transform
 from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta
 
 
@@ -39,16 +42,7 @@ def train(model,
                                y = df_data['cancer'], 
                                groups = df_data['patient_id'].tolist())
     # 前処理関数の定義 (for Dataset)
-    train_transform = Transform(
-        horizontal_flip=cfg.horizontal_flip, 
-        vertical_flip=cfg.vertical_flip,
-        is_train=True
-    ) 
-    valid_transform = Transform(
-        horizontal_flip=cfg.horizontal_flip, 
-        vertical_flip=cfg.vertical_flip,
-        is_train=False
-    ) 
+    transform = Transform(cfg) 
 
     # For each fold
     for idx_fold, (train_index, valid_index) in enumerate(k_folds):
@@ -61,8 +55,8 @@ def train(model,
         # Create Data instances
         # train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
         # valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
-        train_dataset = RSNADatasetPNG(train_data, train_transform, cfg.csv_columns, is_train=True)
-        valid_dataset = RSNADatasetPNG(valid_data, valid_transform, cfg.csv_columns, is_train=True)
+        train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True)
+        valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True)
         
         # Dataloaders
         if TPU:
