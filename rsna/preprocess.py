@@ -27,10 +27,14 @@ def crop_coords(img):
     Crop ROI from image.
     """
     # Otsu's thresholding after Gaussian filtering
+    #   - 画素値分布が双峰性である場合に有効
+    #   - 今回は背景が黒と白の場合があるので自動的に二値化のしきい値を決めてもらうのが良い
     blur = cv2.GaussianBlur(img, (5, 5), 0)
-    _, breast_mask = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-    
+    ret, breast_mask = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    # 輪郭を決める
     cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # 大きな領域であるものを胸部とする
     cnt = max(cnts, key = cv2.contourArea)
     x, y, w, h = cv2.boundingRect(cnt)
     return (x, y, w, h)
@@ -42,11 +46,18 @@ def truncation_normalization(img):
     @img : numpy array image
     return: numpy array of the normalized image
     """
-    Pmin = np.percentile(img[img!=0], 5)
-    Pmax = np.percentile(img[img!=0], 99)
-    truncated = np.clip(img,Pmin, Pmax)  
-    normalized = (truncated - Pmin)/(Pmax - Pmin)
+    # img[img!=0] で0ではない画素値を取ってこれる
+    # np.percentile() で 5%, 99% percentile の点を取ってくる
+    pmin = np.percentile(img[img!=0], 5)
+    pmax = np.percentile(img[img!=0], 99)
+    if pmax-pmin < 5:
+        return img
+    
+    # percentil の点を最小・最大とするように切り出す
+    truncated = np.clip(img, pmin, pmax)  
+    normalized = (truncated - pmin)/(pmax - pmin)
     normalized[img==0]=0
+
     return normalized
 
 
