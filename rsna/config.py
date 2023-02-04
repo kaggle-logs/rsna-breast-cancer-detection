@@ -12,10 +12,7 @@ if PLATFORM == "kaggle" :
 elif PLATFORM == "local" : 
     INPUT_PATH = "./input/rsna-breast-cancer-detection/"
 
-if torch.cuda.is_available():
-    DEVICE = torch.device('cuda')
-else:
-    DEVICE = 'cpu'
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 @dataclass
 class TrainConfig:
