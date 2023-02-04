@@ -194,12 +194,11 @@ def train(model,
                 scheduler.step(valid_loss)
 
             # model save
-            if epoch % 10 == 0 :
-                model_name = f"model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
-                if TPU:
-                    xm.save(model.state_dict(), model_name)
-                else:
-                    torch.save(model.state_dict(), model_name)
+            model_name = f"model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
+            if TPU:
+                xm.save(model.state_dict(), model_name)
+            else:
+                torch.save(model.state_dict(), model_name)
 
         del train_dataset, valid_dataset, train_loader, valid_loader 
         gc.collect()
