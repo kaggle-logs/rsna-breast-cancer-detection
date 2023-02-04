@@ -17,7 +17,16 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 # Train & Submit flow
 
+## 新しいデータセットの作成
+
+### データセットから作成する
+
+1. データセットにしたいnotebook を開く
+2. 「Data」のタブ選択、右の「Output」の横のハンバーガーメニューを選択
+3. 「+New dataset」から選択しているnotebookの出力をデータセットにできる
+
 ## Train
+
 
 ### 学習時
 1. コードをローカルで修正し、動作試験を実施
@@ -71,6 +80,13 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 
 # Log
+
+## 2023/02/02
+
+- ついに整ったのでここから本番
+- しかし training は全然学習が進んでいないことがわかった（なぜ）。
+- [メトリックについて](https://www.kaggle.com/competitions/rsna-breast-cancer-detection/discussion/369886)
+- この[ベースライン](https://www.kaggle.com/code/theoviel/rsna-breast-baseline-inference)をもとに修正する
 
 ## 2023/01/29
 

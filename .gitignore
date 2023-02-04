@@ -7,3 +7,11 @@ __pycache__
 *.csv
 *.log
 mlruns
+tmp
+data
+dicom2png*
+notebook/.ipynb_checkpoints
+dicomsdl
+outputs
+input
+rsna3.10
