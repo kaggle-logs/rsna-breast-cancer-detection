@@ -94,7 +94,7 @@ def get_breast_region_2(image):
 
         return img_final, None
     except:
-        return image
+        return image, None
 
 def get_breast_region(image):
     orig_shape = image.shape
