@@ -19,6 +19,68 @@ def load_img(fname, color="gray"):
     return img
 
 
+# -----------------------------------------------------------------
+# Breast RoI
+#
+def crop_coords(img):
+    """
+    Crop ROI from image.
+    """
+    # Otsu's thresholding after Gaussian filtering
+    blur = cv2.GaussianBlur(img, (5, 5), 0)
+    _, breast_mask = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    
+    cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnt = max(cnts, key = cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(cnt)
+    return (x, y, w, h)
+
+
+def truncation_normalization(img):
+    """
+    Clip and normalize pixels in the breast ROI.
+    @img : numpy array image
+    return: numpy array of the normalized image
+    """
+    Pmin = np.percentile(img[img!=0], 5)
+    Pmax = np.percentile(img[img!=0], 99)
+    truncated = np.clip(img,Pmin, Pmax)  
+    normalized = (truncated - Pmin)/(Pmax - Pmin)
+    normalized[img==0]=0
+    return normalized
+
+
+def clahe(img, clip):
+    """
+    Image enhancement.
+    @img : numpy array image
+    @clip : float, clip limit for CLAHE algorithm
+    return: numpy array of the enhanced image
+    """
+    clahe = cv2.createCLAHE(clipLimit=clip)
+    cl = clahe.apply(np.array(img*255, dtype=np.uint8))
+    return cl
+
+def get_breast_region_2(image):
+    orig_shape = image.shape
+
+    (x, y, w, h) = crop_coords(image)
+    img_cropped = image[y:y+h, x:x+w]
+    
+    img_normalized = truncation_normalization(img_cropped)
+    
+    # Enhancing the contrast of the image.
+    cl1 = clahe(img_normalized, 1.0)
+    cl2 = clahe(img_normalized, 2.0)
+    img_final = cv2.merge((np.array(img_normalized*255, dtype=np.uint8),cl1,cl2))
+    img_final = cv2.cvtColor(img_final, cv2.COLOR_BGR2GRAY)
+    
+    # Resize the image to the final shape. 
+    img_final = cv2.resize(img_final, orig_shape)
+
+    return img_final, None
+
+
 def get_breast_region(image):
     orig_shape = image.shape
     # 背景が白か黒か判定
@@ -65,6 +127,11 @@ class Transform():
                 ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
                 HorizontalFlip(p = cfg.aug.horizontal_flip),
                 VerticalFlip(p = cfg.aug.vertical_flip),
+                Normalize(mean=0, std=1),
+                ToTensorV2(),
+            ])
+        elif cfg.aug.version == "v0.0.1" :
+            self.transform_train = Compose([
                 Normalize(mean=0, std=1),
                 ToTensorV2(),
             ])

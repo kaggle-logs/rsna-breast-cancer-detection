@@ -73,7 +73,7 @@ class RSNADatasetPNG(Dataset):
         if self.dataframe.iloc[index]["laterality"] == 1 :
             image = np.fliplr(image)
         # - 胸部のみ抽出
-        image, _ = prep.get_breast_region(image)
+        image, _ = prep.get_breast_region_2(image)
         
         # For this image also import .csv information
         csv_data = np.array(self.dataframe.iloc[index][self.csv_columns].values, 
