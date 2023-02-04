@@ -34,6 +34,8 @@ def crop_coords(img):
 
     # 輪郭を決める
     cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(cnts) == 0:
+        return img
     # 大きな領域であるものを胸部とする
     cnt = max(cnts, key = cv2.contourArea)
     x, y, w, h = cv2.boundingRect(cnt)
