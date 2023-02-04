@@ -1,7 +1,6 @@
 import os
 import torch
 from dataclasses import dataclass
-import torch_xla
 import torch_xla.core.xla_model as xm
 
 if os.path.exists("/kaggle") : 

@@ -1,10 +1,10 @@
 import torch
-import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import FloatTensor, LongTensor
 from torch.utils.data import Dataset, DataLoader, Subset
-from torchvision.models import resnet34, resnet50
+# import torchvision
+# from torchvision.models import resnet34, resnet50
 
 import timm
 

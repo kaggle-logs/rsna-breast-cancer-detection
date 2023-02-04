@@ -11,4 +11,5 @@ vertical_flip : 0.5
 horizontal_flip : 0.5
 output_size : 1
 csv_columns : ["laterality", "view", "age", "implant"]
+input_path : "/kaggle/input/rsnapng/rsna_dicom_to_png"
 debug : False

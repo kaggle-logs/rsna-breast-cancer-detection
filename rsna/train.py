@@ -13,8 +13,6 @@ from torch.utils.data import Dataset, DataLoader, Subset
 # for TPU
 if DEVICE == "TPU":
     import torch_xla.core.xla_model as xm
-    import torch_xla.distributed.parallel_loader as pl
-    import torch_xla.distributed.xla_multiprocessing as xmp
 
 # local
 from rsna.config import DEVICE, TPU
@@ -40,7 +38,6 @@ def train(model,
     k_folds = group_fold.split(X = np.zeros(len(df_data)), 
                                y = df_data['cancer'], 
                                groups = df_data['patient_id'].tolist())
-
     # 前処理関数の定義 (for Dataset)
     train_transform = Transform(
         horizontal_flip=cfg.horizontal_flip, 

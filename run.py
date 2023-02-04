@@ -52,7 +52,7 @@ def main(cfg : DictConfig) -> None:
     # Ran it locally on all data, see the results below
 
     if PLATFORM == "kaggle" : 
-        df_train = load_data("train", custom_path="/kaggle/input/rsnapng/rsna_dicom_to_png")
+        df_train = load_data("train", custom_path=cfg.input_path)
     elif PLATFORM == "local" : 
         df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256")
     df_train = preprocess(df_train, is_train=True)
