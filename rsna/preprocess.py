@@ -75,24 +75,26 @@ def clahe(img, clip):
     return cl
 
 def get_breast_region_2(image):
-    orig_shape = image.shape
+    try:
+        orig_shape = image.shape
 
-    (x, y, w, h) = crop_coords(image)
-    img_cropped = image[y:y+h, x:x+w]
+        (x, y, w, h) = crop_coords(image)
+        img_cropped = image[y:y+h, x:x+w]
     
-    img_normalized = truncation_normalization(img_cropped)
+        img_normalized = truncation_normalization(img_cropped)
     
-    # Enhancing the contrast of the image.
-    cl1 = clahe(img_normalized, 1.0)
-    cl2 = clahe(img_normalized, 2.0)
-    img_final = cv2.merge((np.array(img_normalized*255, dtype=np.uint8),cl1,cl2))
-    img_final = cv2.cvtColor(img_final, cv2.COLOR_BGR2GRAY)
+        # Enhancing the contrast of the image.
+        cl1 = clahe(img_normalized, 1.0)
+        cl2 = clahe(img_normalized, 2.0)
+        img_final = cv2.merge((np.array(img_normalized*255, dtype=np.uint8),cl1,cl2))
+        img_final = cv2.cvtColor(img_final, cv2.COLOR_BGR2GRAY)
     
-    # Resize the image to the final shape. 
-    img_final = cv2.resize(img_final, orig_shape)
+        # Resize the image to the final shape. 
+        img_final = cv2.resize(img_final, orig_shape)
 
-    return img_final, None
-
+        return img_final, None
+    except:
+        return image
 
 def get_breast_region(image):
     orig_shape = image.shape
