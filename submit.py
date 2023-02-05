@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 
 # local
 from rsna.utility import load_data, preprocess, data_to_device, dicom2png
-from rsna.model import ResNet50Network
+from rsna.model import ResNet50Network, EfficientNet
 from rsna.config import DEVICE, PLATFORM
 from rsna.dataset import RSNADatasetPNG
 
@@ -55,7 +55,8 @@ if __name__ == "__main__" :
     df_test = preprocess(df_test, is_train=False)
     
     # load trained model
-    model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
+    # model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
+    model = EfficientNet(output_size=1, num_columns=4, pretrained=False, is_train=False).to(DEVICE) 
     model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
     model.eval()
 
