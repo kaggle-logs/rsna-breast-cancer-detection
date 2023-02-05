@@ -135,28 +135,36 @@ def get_breast_region(image):
 
 
 class Transform():
-    def __init__(self, cfg):
-        # Data Augmentation (custom for each dataset type)
-        if cfg.aug.version == "v0.0.0" :
-            self.transform_train = Compose([
-                ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
-                HorizontalFlip(p = cfg.aug.horizontal_flip),
-                VerticalFlip(p = cfg.aug.vertical_flip),
+    def __init__(self, cfg, only_test=False):
+
+        if only_test : 
+            self.transform_test = Compose([
                 Normalize(mean=0, std=1),
                 ToTensorV2(),
             ])
-        elif cfg.aug.version == "v0.0.1" :
-            self.transform_train = Compose([
-                Normalize(mean=0, std=1),
-                ToTensorV2(),
-            ])
-        else:
-            raise NotImplementedError(f"The {cfg.aug_version} is not implemented yet.")
+
+        else :
+            # Data Augmentation (custom for each dataset type)
+            if cfg.aug.version == "v0.0.0" :
+                self.transform_train = Compose([
+                    ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
+                    HorizontalFlip(p = cfg.aug.horizontal_flip),
+                    VerticalFlip(p = cfg.aug.vertical_flip),
+                    Normalize(mean=0, std=1),
+                    ToTensorV2(),
+                ])
+            elif cfg.aug.version == "v0.0.1" :
+                self.transform_train = Compose([
+                    Normalize(mean=0, std=1),
+                    ToTensorV2(),
+                ])
+            else:
+                raise NotImplementedError(f"The {cfg.aug_version} is not implemented yet.")
         
-        self.transform_test = Compose([
-            Normalize(mean=0, std=1),
-            ToTensorV2(),
-        ])
+            self.transform_test = Compose([
+                Normalize(mean=0, std=1),
+                ToTensorV2(),
+            ])
     
     def get(self, is_train):
         if is_train : 

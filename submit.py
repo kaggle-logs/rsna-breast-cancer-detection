@@ -9,6 +9,7 @@ from joblib import Parallel, delayed
 
 # local
 from rsna.utility import load_data, preprocess, data_to_device, dicom2png
+from rsna.preprocess import Transform
 from rsna.model import ResNet50Network, EfficientNet
 from rsna.config import DEVICE, PLATFORM
 from rsna.dataset import RSNADatasetPNG
@@ -61,7 +62,8 @@ if __name__ == "__main__" :
     model.eval()
 
     # dataset, dataloader
-    test_dataset = RSNADatasetPNG(df_test, 0, 0, csv_columns=["laterality", "view", "age", "implant"], is_train=False)
+    transform = Transform(cfg=None, only_test=True) 
+    test_dataset = RSNADatasetPNG(df_test, transform.get(is_train=False), csv_columns = ["laterality", "view", "age", "implant"], has_target=False)
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
     # predict
