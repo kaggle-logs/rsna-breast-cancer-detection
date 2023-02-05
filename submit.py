@@ -32,7 +32,7 @@ if __name__ == "__main__" :
 
 
     def process(fname):
-        img = dicom2png(str(fname))
+        img = dicom2png(str(fname), PNG_SIZE=(512,512))
         cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
 
     for patient_id in pathlib.Path(test_path).glob("*") : 
