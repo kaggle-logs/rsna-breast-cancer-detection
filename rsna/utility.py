@@ -61,8 +61,10 @@ def preprocess(data, is_train = True):
         data_cancer_1 = data[data["cancer"]==1]
         # oversampling 
         #   - replace : 重複を許す (True)
-        data_cancer_1_over = resample(data_cancer_1, replace=True, n_samples=len(data_cancer_0), random_state=27)
-        data = pd.concat([data_cancer_0, data_cancer_1_over])
+        # data_cancer_1_over = resample(data_cancer_1, replace=True, n_samples=len(data_cancer_0), random_state=27)
+        # data = pd.concat([data_cancer_0, data_cancer_1_over])
+        data_cancer_0_under = resample(data_cancer_0, replace=True, n_samples=len(data_cancer_1), random_state=27)
+        data = pd.concat([data_cancer_0_under, data_cancer_1])
     else :
         data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path"]]
 
