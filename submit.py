@@ -56,7 +56,7 @@ if __name__ == "__main__" :
     
     # load trained model
     # model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
-    model = EfficientNet(output_size=1, num_columns=4, pretrained=False, is_train=False).to(DEVICE) 
+    model = EfficientNet(pretrained=False).to(DEVICE) 
     model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
     model.eval()
 
