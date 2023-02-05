@@ -11,7 +11,8 @@ from omegaconf import DictConfig, OmegaConf
 # local
 from rsna.config import TrainConfig, DEVICE, PLATFORM
 from rsna.model import ResNet50Network, EfficientNet
-from rsna.utility import load_data, preprocess, fix_seed
+from rsna.utility import load_data, fix_seed
+from rsna.preprocess import df_preprocess
 from rsna.train import train
 
 # set_seed()
@@ -55,11 +56,11 @@ def main(cfg : DictConfig) -> None:
         df_train = load_data("train", custom_path=cfg.input_path)
     elif PLATFORM == "local" : 
         df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256")
-    df_train = preprocess(df_train, is_train=True)
+    df_train = df_preprocess(df_train, is_train=True, sampling=cfg.preprocess.sampling)
 
     # Tools
     # Optimizer/ Scheduler/ Criterion
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.005, weight_decay=0.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr = cfg.optimizer.learning_rate, weight_decay = cfg.optimizer.weight_decay)
     scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', patience=1, verbose=True, factor=0.4)
     criterion = nn.BCEWithLogitsLoss()
 

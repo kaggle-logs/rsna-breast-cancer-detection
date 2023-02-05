@@ -53,8 +53,6 @@ def train(model,
         valid_data = df_data.iloc[valid_index].reset_index(drop=True)
 
         # Create Data instances
-        # train_dataset = RSNADataset(train_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
-        # valid_dataset = RSNADataset(valid_data, cfg.vertical_flip, cfg.horizontal_flip, cfg.csv_columns, is_train=True)
         train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True)
         valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True)
         

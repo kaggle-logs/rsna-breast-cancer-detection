@@ -14,8 +14,6 @@ import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold, GroupKFold
 from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
-from sklearn.preprocessing import LabelEncoder, normalize
-from sklearn.utils import resample
 
 from rsna.config import INPUT_PATH, DEVICE, PLATFORM
 
@@ -52,40 +50,6 @@ def load_data(f_name, custom_path = None):
     return data
     
     
-def preprocess(data, is_train = True):
-
-    if is_train : 
-        # Keep only columns in test + target variable
-        data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path", "cancer"]]
-        data_cancer_0 = data[data["cancer"]==0]
-        data_cancer_1 = data[data["cancer"]==1]
-        # oversampling 
-        #   - replace : 重複を許す (True)
-        # data_cancer_1_over = resample(data_cancer_1, replace=True, n_samples=len(data_cancer_0), random_state=27)
-        # data = pd.concat([data_cancer_0, data_cancer_1_over])
-        data_cancer_0_under = resample(data_cancer_0, replace=True, n_samples=len(data_cancer_1), random_state=27)
-        data = pd.concat([data_cancer_0_under, data_cancer_1])
-    else :
-        data = data[["patient_id", "image_id", "laterality", "view", "age", "implant", "path"]]
-
-    # Encode categorical variables
-    # Avoid 'SettingWithCopyWarning'
-    le_laterality = LabelEncoder()
-    le_view = LabelEncoder()
-    encoded_laterality = le_laterality.fit_transform(data['laterality'])
-    encoded_view = le_view.fit_transform(data['view'])
-    data = data.drop("laterality", axis=1) 
-    data = data.drop("view", axis=1)
-    data["laterality"] = encoded_laterality
-    data["view"] = encoded_view
-
-    # print("Number of missing values in Age:", data["age"].isna().sum())
-    data['age'] = data['age'].fillna(int(data["age"].mean()))
-
-
-    return data
-
-
 
 
 def data_to_device(data, is_train = True):
