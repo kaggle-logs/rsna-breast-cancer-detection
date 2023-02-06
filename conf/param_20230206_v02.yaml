@@ -1,5 +1,5 @@
 fold : 3 
-epochs : 15 
+epochs : 50 
 num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
 
 lr_patience : 1 
