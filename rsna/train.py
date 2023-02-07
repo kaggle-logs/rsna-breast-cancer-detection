@@ -21,7 +21,7 @@ if TPU:
 from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG
 from rsna.preprocess import Transform
-from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta
+from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1
 
 
 def train(model, 
@@ -125,11 +125,15 @@ def train(model,
             train_acc = rsna_accuracy(list_train_targets, list_train_preds)
             train_loss = running_train_loss / len(train_loader)
             train_pfbeta = pfbeta(list_train_targets, list_train_preds, 1)
+            train_precision, train_recall, train_f1 = rsna_precision_recall_f1(list_train_targets, list_train_preds)
 
             # mlflow logs
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_acc", train_acc, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_loss", train_loss, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_pfbeta", train_pfbeta, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_precision", train_precision, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_recall", train_recall, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_f1", train_f1, step=epoch)
 
 
 
@@ -172,6 +176,7 @@ def train(model,
                 valid_loss = running_valid_loss/len(valid_loader)
                 valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
                 valid_pfbeta = pfbeta(list_valid_targets, list_valid_preds, 1)
+                valid_precision, valid_recall, valid_f1 = rsna_precision_recall_f1(list_valid_targets, list_valid_preds)
 
                 # print
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
@@ -181,6 +186,9 @@ def train(model,
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_loss", valid_loss, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_pfbeta", valid_pfbeta, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_precision", valid_precision, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_recall", valid_recall, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_f1", valid_f1, step=epoch)
 
                 # Update scheduler (for learning_rate)
                 scheduler.step(valid_loss)

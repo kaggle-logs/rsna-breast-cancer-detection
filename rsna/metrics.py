@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix, precision_score, recall_score, f1_score
 
 def rsna_accuracy(y_true : list, y_pred : list, threshold=0.5):
     if type(y_pred) == list : 
@@ -11,6 +11,16 @@ def rsna_roc(y_true : list, y_pred : list):
     # if y_true has only on class, the roc_auc_score fails.
     # please be careful.
     return roc_auc_score(y_true, y_pred)
+
+def rsna_precision_recall_f1(y_true, y_pred):
+    y_pred = np.where(np.array(y_pred)>0.5,1,0)
+
+    precision = precision_score(y_true, y_pred)
+    recall = recall_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+
+    return precision, recall, f1
+
 
 def pfbeta(labels, predictions, beta):
     y_true_count = 0

@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, normalize
 from sklearn.utils import resample
 
 from albumentations import (ToFloat, Normalize, VerticalFlip, HorizontalFlip, Compose, Resize,
-                            RandomBrightnessContrast, HueSaturationValue, Blur, GaussNoise,
+                            RandomBrightnessContrast, HueSaturationValue, Blur, GaussNoise, CoarseDropout,
                             Rotate, RandomResizedCrop, Cutout, ShiftScaleRotate, ToGray)
 from albumentations.pytorch import ToTensorV2
 
@@ -193,15 +193,24 @@ class Transform():
             # Data Augmentation (custom for each dataset type)
             if cfg.aug.version == "v0.0.0" :
                 self.transform_train = Compose([
-                    ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]),
-                    HorizontalFlip(p = cfg.aug.horizontal_flip),
-                    VerticalFlip(p = cfg.aug.vertical_flip),
+                    ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]), # ランダムにアフィン変換を適用
+                    HorizontalFlip(p = cfg.aug.horizontal_flip), # 水平方向にフリップ
+                    VerticalFlip(p = cfg.aug.vertical_flip), # 垂直方向にフリップ
                     Normalize(mean=0, std=1),
                     ToTensorV2(),
                 ])
             elif cfg.aug.version == "v0.0.1" :
                 self.transform_train = Compose([
                     Normalize(mean=0, std=1),
+                    ToTensorV2(),
+                ])
+            elif cfg.aug.version == "v0.0.2" :
+                self.transform_train = Compose([
+                    ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]), # ランダムにアフィン変換を適用
+                    HorizontalFlip(p = cfg.aug.horizontal_flip), # 水平方向にフリップ
+                    VerticalFlip(p = cfg.aug.vertical_flip), # 垂直方向にフリップ
+                    RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.5, brightness_by_max=True, p=1.0),
+                    CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=1.0),
                     ToTensorV2(),
                 ])
             else:
