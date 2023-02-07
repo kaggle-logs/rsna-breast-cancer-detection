@@ -1,6 +1,4 @@
 import torch
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-import torch.nn as nn
 import mlflow
 import subprocess
 
@@ -44,9 +42,6 @@ def main(cfg : DictConfig) -> None:
     yaml = OmegaConf.to_yaml(cfg)
     print(yaml)
 
-    # model = ResNet50Network(output_size=1, num_columns=4).to(DEVICE)
-    model = EfficientNet(pretrained=True).to(DEVICE)
-
     # ------------------
 
     # Run the cell below to train
@@ -58,23 +53,7 @@ def main(cfg : DictConfig) -> None:
         df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256")
     df_train = df_preprocess(df_train, is_train=True, sampling=cfg.preprocess.sampling)
 
-    # Tools
-    # Optimizer
-    if cfg.optimizer.name == "Adam" :
-        optimizer = torch.optim.Adam(model.parameters(), lr = cfg.optimizer.learning_rate, weight_decay = cfg.optimizer.weight_decay)
-    else :
-        raise NotImplementedError(cfg.optimizer.name)
-
-    # Scheduler
-    if cfg.scheduler.name == "ReduceLROnPlateau" :
-        scheduler = ReduceLROnPlateau(optimizer=optimizer, mode=cfg.scheduler.mode, patience=cfg.scheduler.patience, verbose=True, factor=cfg.scheduler.factor)
-    else :
-        raise NotImplementedError(cfg.scheduler.name)
-
-    # Loss
-    criterion = nn.BCEWithLogitsLoss()
-
-    train(model, optimizer, scheduler, criterion, df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
+    train(df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
 
     client.set_terminated(run.info.run_id)
 

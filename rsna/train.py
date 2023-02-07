@@ -9,26 +9,23 @@ from sklearn.model_selection import StratifiedKFold, GroupKFold
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
-
+import torch.nn as nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # local
+from rsna.utility import data_to_device
+from rsna.dataset import RSNADataset, RSNADatasetPNG
+from rsna.preprocess import Transform
+from rsna.model import EfficientNet
 from rsna.config import DEVICE, TPU
+from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1
 
 # for TPU
 if TPU:
     import torch_xla.core.xla_model as xm
 
-from rsna.utility import data_to_device
-from rsna.dataset import RSNADataset, RSNADatasetPNG
-from rsna.preprocess import Transform
-from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1
 
-
-def train(model, 
-          optimizer, 
-          scheduler, 
-          criterion, 
-          df_data : pd.DataFrame, 
+def train(df_data : pd.DataFrame, 
           cfg, 
           mlflow_client, 
           run_id : int ):
@@ -47,6 +44,24 @@ def train(model,
     # For each fold
     for idx_fold, (train_index, valid_index) in enumerate(k_folds):
         print(f"-------- Fold #{idx_fold}")
+
+        # --- model init
+        model = EfficientNet(pretrained=True).to(DEVICE)
+
+        # --- Optimizer
+        if cfg.optimizer.name == "Adam" :
+            optimizer = torch.optim.Adam(model.parameters(), lr = cfg.optimizer.learning_rate, weight_decay = cfg.optimizer.weight_decay)
+        else :
+            raise NotImplementedError(cfg.optimizer.name)
+
+        # --- Scheduler
+        if cfg.scheduler.name == "ReduceLROnPlateau" :
+            scheduler = ReduceLROnPlateau(optimizer=optimizer, mode=cfg.scheduler.mode, patience=cfg.scheduler.patience, verbose=True, factor=cfg.scheduler.factor)
+        else :
+            raise NotImplementedError(cfg.scheduler.name)
+
+        # --- Loss
+        criterion = nn.BCEWithLogitsLoss()
 
         # --- Read in Data ---
         train_data = df_data.iloc[train_index].reset_index(drop=True)
@@ -200,5 +215,5 @@ def train(model,
             else:
                 torch.save(model.state_dict(), model_name)
 
-        del train_dataset, valid_dataset, train_loader, valid_loader 
+        del train_dataset, valid_dataset, train_loader, valid_loader, model
         gc.collect()

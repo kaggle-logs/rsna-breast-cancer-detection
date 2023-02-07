@@ -73,7 +73,7 @@ class EfficientNet(nn.Module):
         # ConvNextV2
         if verbose: print("-- input : ", x.shape)
             
-        x = self.backbone(x)
+        x = self.backbone(x.float())
         if verbose: print(x.shape) # (BS, out_features) ... Effnet はデフォルトで10000次元出力
             
         x = self.dropout(x)

@@ -24,6 +24,7 @@ def fix_seed(SEED=1993):
     torch.cuda.manual_seed_all(SEED)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(SEED)
 
 
 def load_data(f_name, custom_path = None):
