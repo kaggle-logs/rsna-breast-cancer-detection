@@ -81,6 +81,13 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 # Log
 
+## 2023/02/08
+
+- Augumentation を v0.0.2にして（2/7はv0.0.0のままだった）再度学習
+- kFold 外でモデルが定義されていたので内側で定義、bug fix
+- ADAM のパラメータを修正したので過学習するようになった（〜20epoch）！ちゃんと学習自体は進んでいるっぽい
+  - epoch 20 で止めるのと、Augumentation による正則化に期待
+
 ## 2023/02/07
 
 ### train
@@ -88,7 +95,7 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 - Adam, lr = 0.005 --> 0.001 に変更
 - ReduceLROnPlateau、patience=3 に変更, mode="min" に変更（lossを見ているはずなので...）
 - Augumentationの更新
-  - CoarseDropout, RandomBrightness の追加
+  - ~CoarseDropout, RandomBrightness の追加~
 
 ### submit  
 - (!) モデルを取り違えて、50エポック学習したのに 9エポック目のモデルで sbumit していた
