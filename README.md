@@ -81,6 +81,30 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 # Log
 
+## 2023/02/07
+
+### train
+
+- Adam, lr = 0.005 --> 0.001 に変更
+- ReduceLROnPlateau、patience=3 に変更, mode="min" に変更（lossを見ているはずなので...）
+- Augumentationの更新
+  - CoarseDropout, RandomBrightness の追加
+
+### submit  
+- (!) モデルを取り違えて、50エポック学習したのに 9エポック目のモデルで sbumit していた
+  - `model_fold1_epoch49_vacc0.545_vpfbeta0.504.pth` で再度submitしてみる
+
+## 2023/02/06
+
+- 1fold, 数エポックだけ学習したモデル（いちおう vfpobeta=0.5程度）をサブミットしてみたら、Score=0.3のままだった
+  - 512x512 PNG 画像を使っているつもり
+  - なぜだ？あまりにも乖離している
+  - ひとまず学習を完全に終わらせるべく、downsampling を導入して 2000 vs 2000 サンプル程度の学習を試みてみる
+  - ここから前処理にこだわってとりあえずスコアを伸ばしてみよう
+- downsampling, 3fold, 15 エポック学習したモデルをサブミットすると、Score=0.4に上がった（[submitt]()）
+  - 512x512 PNG画像
+  - やはりスコア0.3は学習モデルが汎用的なものになっていなかったのだな？
+
 ## 2023/02/02
 
 - ついに整ったのでここから本番

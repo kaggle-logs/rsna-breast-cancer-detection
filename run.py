@@ -9,7 +9,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 # local
-from rsna.config import TrainConfig, DEVICE, PLATFORM
+from rsna.config import DEVICE, PLATFORM
 from rsna.model import ResNet50Network, EfficientNet
 from rsna.utility import load_data, fix_seed
 from rsna.preprocess import df_preprocess
@@ -59,9 +59,19 @@ def main(cfg : DictConfig) -> None:
     df_train = df_preprocess(df_train, is_train=True, sampling=cfg.preprocess.sampling)
 
     # Tools
-    # Optimizer/ Scheduler/ Criterion
-    optimizer = torch.optim.Adam(model.parameters(), lr = cfg.optimizer.learning_rate, weight_decay = cfg.optimizer.weight_decay)
-    scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='max', patience=1, verbose=True, factor=0.4)
+    # Optimizer
+    if cfg.optimizer.name == "Adam" :
+        optimizer = torch.optim.Adam(model.parameters(), lr = cfg.optimizer.learning_rate, weight_decay = cfg.optimizer.weight_decay)
+    else :
+        raise NotImplementedError(cfg.optimizer.name)
+
+    # Scheduler
+    if cfg.scheduler.name == "ReduceLROnPlateau" :
+        scheduler = ReduceLROnPlateau(optimizer=optimizer, mode=cfg.scheduler.mode, patience=cfg.scheduler.patience, verbose=True, factor=cfg.scheduler.factor)
+    else :
+        raise NotImplementedError(cfg.scheduler.name)
+
+    # Loss
     criterion = nn.BCEWithLogitsLoss()
 
     train(model, optimizer, scheduler, criterion, df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
