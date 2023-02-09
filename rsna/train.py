@@ -74,8 +74,8 @@ def train(df_data : pd.DataFrame,
             pickle.dump(valid_index, f)
 
         # Create Data instances
-        train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True)
-        valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True)
+        train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
+        valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
         
         # Dataloaders
         if TPU:

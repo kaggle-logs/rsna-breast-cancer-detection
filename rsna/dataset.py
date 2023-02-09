@@ -50,12 +50,12 @@ class RSNADataset(Dataset):
 
 class RSNADatasetPNG(Dataset):
     
-    def __init__(self, dataframe, transform, csv_columns, has_target=True):
+    def __init__(self, dataframe, transform, csv_columns, has_target=True, image_prep_ver=None):
         self.dataframe = dataframe
         self.has_target = has_target
         self.csv_columns = csv_columns
         self.transform = transform
-            
+        self.breast_prep = prep.BreastPreprocessor(image_prep_ver)
             
     def __len__(self):
         return len(self.dataframe)
@@ -70,10 +70,11 @@ class RSNADatasetPNG(Dataset):
 
         # preprocess
         # - laterality = R なら左右反転 (encodeされているので0/1)
-        if self.dataframe.iloc[index]["laterality"] == 1 :
-            image = np.fliplr(image)
-        # - 胸部のみ抽出
-        image, _ = prep.get_breast_region_2(image)
+#        if prep.is_flip_side(image):
+#            image = np.fliplr(image)
+#        # - 胸部のみ抽出
+#        image, _ = prep.get_breast_region_2(image)
+        image, aux = self.breast_prep.get_breast_region(image)
         
         # For this image also import .csv information
         csv_data = np.array(self.dataframe.iloc[index][self.csv_columns].values, 

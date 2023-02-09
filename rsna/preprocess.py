@@ -68,115 +68,182 @@ def df_preprocess(data, is_train = True, sampling="up"):
 # -----------------------------------------------------------------
 # Breast RoI
 #
-def crop_coords(img):
-    """
-    Crop ROI from image.
-    """
-    # Otsu's thresholding after Gaussian filtering
-    #   - 画素値分布が双峰性である場合に有効
-    #   - 今回は背景が黒と白の場合があるので自動的に二値化のしきい値を決めてもらうのが良い
-    blur = cv2.GaussianBlur(img, (5, 5), 0)
-    ret, breast_mask = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+class BreastPreprocessor:
+    def __init__(self, version):
+        self.version = version
 
-    # 輪郭を決める
-    cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if len(cnts) == 0:
-        return (0,0,img.shape[0], img.shape[1])
-    # 大きな領域であるものを胸部とする
-    cnt = max(cnts, key = cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(cnt)
-    return (x, y, w, h)
+    def is_flip_side(self, img, mode="pixel"):
+        """
+        胸部の向きを決定する（右向きに統一する）
+        """
+        if mode == "pixel":
+            # 画素値のsumを列方向に射影して1次元配列にする
+            # 真ん中で2分割する
+            col_sums_split = np.array_split(np.sum(img, axis=0), 2)
+            # 左右の領域に分けたときの画素値の総和を計算する
+            left_col_sum = np.sum(col_sums_split[0])
+            right_col_sum = np.sum(col_sums_split[1])
+            # 画素値が大きい方にオブジェクト --> 胸部がある、と判定する
+            # 右側に胸部があれば flip 対象とする
+            if right_col_sum > left_col_sum : 
+                return True
+            else:
+                return False
+        elif mode == "var" : 
+            # 画素値のsumを列方向に射影して1次元配列にする
+            # 真ん中で2分割する
+            col_sums_split = np.array_split(np.sum(img, axis=0), 2)
+            # 左右の領域に分けたときの画素値の総和を計算する
+            left_col_sum = np.var(col_sums_split[0])
+            right_col_sum = np.var(col_sums_split[1])
+            # 分散が大きい = 背景と胸部が写っている、と判定する
+            # 右側に胸部があれば flip 対象とする
+            if right_col_sum > left_col_sum : 
+                return True
+            else:
+                return False
 
 
-def truncation_normalization(img):
-    """
-    Clip and normalize pixels in the breast ROI.
-    @img : numpy array image
-    return: numpy array of the normalized image
-    """
-    # img[img!=0] で0ではない画素値を取ってこれる
-    # np.percentile() で 5%, 99% percentile の点を取ってくる
-    pmin = np.percentile(img[img!=0], 5)
-    pmax = np.percentile(img[img!=0], 99)
-    if pmax-pmin < 5:
-        return img
+    def crop_coords(self, img):
+        """
+        Crop ROI from image.
+        """
+        # Otsu's thresholding after Gaussian filtering
+        #   - 画素値分布が双峰性である場合に有効
+        #   - 今回は背景が黒と白の場合があるので自動的に二値化のしきい値を決めてもらうのが良い
+        blur = cv2.GaussianBlur(img, (5, 5), 0)
+        ret, breast_mask = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+        # 輪郭を決める
+        cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(cnts) == 0:
+            # 見つからなければそのままのサイズを返す
+            return (0,0,self.img.shape[0], img.shape[1])
+        # 大きな領域であるものを胸部とする
+        cnt = max(cnts, key = cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(cnt)
+        return (x, y, w, h)
+
+    def truncation_normalization(self, img):
+        """
+        Clip and normalize pixels in the breast ROI.
+        @img : numpy array image
+        return: numpy array of the normalized image
+        """
+        # img[img!=0] で0ではない画素値を取ってこれる
+        # np.percentile() で 5%, 99% percentile の点を取ってくる
+        pmin = np.percentile(img[img!=0], 5)
+        pmax = np.percentile(img[img!=0], 99)
+        if pmax-pmin < 5:
+            return img
+
+        # percentil の点を最小・最大とするように切り出す
+        truncated = np.clip(img, pmin, pmax)  
+        normalized = (truncated - pmin)/(pmax - pmin)
+        normalized[img==0]=0
+
+        return normalized
+
+    def clahe(self, clip, img):
+        """
+        Image enhancement.
+        @img : numpy array image
+        @clip : float, clip limit for CLAHE algorithm
+        return: numpy array of the enhanced image
+        """
+        clahe = cv2.createCLAHE(clipLimit=clip)
+        cl = clahe.apply(np.array(img*255, dtype=np.uint8))
+        return cl
+
+    def get_breast_region(self, img):
+        if self.version == "v1":
+            return self._get_breast_region_1(img)
+        elif self.version == "v2":
+            return self._get_breast_region_2(img)
+        elif self.version == "v3":
+            return self._get_breast_region_3(img)
+        else : 
+            raise NotImplementedError()
     
-    # percentil の点を最小・最大とするように切り出す
-    truncated = np.clip(img, pmin, pmax)  
-    normalized = (truncated - pmin)/(pmax - pmin)
-    normalized[img==0]=0
-
-    return normalized
-
-
-def clahe(img, clip):
-    """
-    Image enhancement.
-    @img : numpy array image
-    @clip : float, clip limit for CLAHE algorithm
-    return: numpy array of the enhanced image
-    """
-    clahe = cv2.createCLAHE(clipLimit=clip)
-    cl = clahe.apply(np.array(img*255, dtype=np.uint8))
-    return cl
-
-def get_breast_region_2(image):
-    try:
+    def _get_breast_region_1(self, image):
         orig_shape = image.shape
+        # 背景が白か黒か判定
+        if np.mean(image.flatten()) < 100:
+            image = cv2.bitwise_not(image)
 
-        (x, y, w, h) = crop_coords(image)
-        img_cropped = image[y:y+h, x:x+w]
-    
-        img_normalized = truncation_normalization(img_cropped)
-    
+        # 2値化する
+        # 精度に直結する
+        ret, bin_img = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+
+        # 輪郭を抽出する。
+        contours, hierarchy = cv2.findContours(bin_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+
+        # 最も大きい領域を胸部とする
+        max_size = -999
+        max_contour = None
+        for idx, c in enumerate(contours):
+            if len(c) > max_size:
+                max_size = len(c)
+                max_contour = c
+
+        xmin, xmax = np.min(max_contour[:,:,0]), np.max(max_contour[:,:,0])
+        ymin, ymax = np.min(max_contour[:,:,1]), np.max(max_contour[:,:,1])
+        if len(image.shape) == 2 : # gray image
+            crop_img = image[ymin:ymax, xmin:xmax]
+        elif len(image.shape) == 3 : # color image
+            crop_img = image[ymin:ymax, xmin:xmax,:]
+        else:
+            ValueError(f"the input image shape is not one as expected {image.shape}")
+
+        # resize to original shape
+        crop_img = cv2.resize(crop_img, orig_shape)
+
+        return crop_img, [bin_img, contours, max_contour]
+
+    def _get_breast_region_2(self, img):
+        orig_shape = img.shape
+
+        # 胸部反転処理
+        if self.is_flip_side(img):
+            img = np.fliplr(img)
+
+        # クロップ
+        (x, y, w, h) = self.crop_coords(img)
+        img_cropped = img[y:y+h, x:x+w]
+
+        img_normalized = self.truncation_normalization(img_cropped)
+
         # Enhancing the contrast of the image.
-        cl1 = clahe(img_normalized, 1.0)
-        cl2 = clahe(img_normalized, 2.0)
+        cl1 = self.clahe(img_normalized, 1.0)
+        cl2 = self.clahe(img_normalized, 2.0)
         img_final = cv2.merge((np.array(img_normalized*255, dtype=np.uint8),cl1,cl2))
         img_final = cv2.cvtColor(img_final, cv2.COLOR_BGR2GRAY)
-    
+
         # Resize the image to the final shape. 
-        img_final = cv2.resize(img_final, orig_shape)
+        img_final = cv2.resize(img_cropped, orig_shape)
 
-        return img_final, None
-    except:
-        return image, None
+        return img_final, [img_cropped,]
 
-def get_breast_region(image):
-    orig_shape = image.shape
-    # 背景が白か黒か判定
-    if np.mean(image.flatten()) < 100:
-        image = cv2.bitwise_not(image)
 
-    # 2値化する
-    # 精度に直結する
-    ret, bin_img = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
+    def _get_breast_region_3(self, img):
+        orig_shape = img.shape
+        
+        # 背景色を白色に統一 (背景が白255か黒0か判定)
+        if np.mean(img.flatten()) < 100:
+            img = cv2.bitwise_not(img)
 
-    # 輪郭を抽出する。
-    contours, hierarchy = cv2.findContours(bin_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        # 胸部反転処理
+        if self.is_flip_side(img, mode="var"):
+            img = np.fliplr(img)
 
-    # 最も大きい領域を胸部とする
-    max_size = -999
-    max_contour = None
-    for idx, c in enumerate(contours):
-        if len(c) > max_size:
-            max_size = len(c)
-            max_contour = c
-    
-    xmin, xmax = np.min(max_contour[:,:,0]), np.max(max_contour[:,:,0])
-    ymin, ymax = np.min(max_contour[:,:,1]), np.max(max_contour[:,:,1])
-    if len(image.shape) == 2 : # gray image
-        crop_img = image[ymin:ymax, xmin:xmax]
-    elif len(image.shape) == 3 : # color image
-        crop_img = image[ymin:ymax, xmin:xmax,:]
-    else:
-        ValueError(f"the input image shape is not one as expected {image.shape}")
+        # クロップ
+        (x, y, w, h) = self.crop_coords(img)
+        img_cropped = img[y:y+h, x:x+w]
 
-    # resize to original shape
-    crop_img = cv2.resize(crop_img, orig_shape)
+        # Resize the image to the final shape. 
+        img_final = cv2.resize(img_cropped, orig_shape)
 
-    return crop_img, [bin_img, contours, max_contour]
-
+        return img_final, [img_cropped,]
 
 
 

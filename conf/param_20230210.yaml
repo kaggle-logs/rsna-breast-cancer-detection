@@ -1,0 +1,30 @@
+fold : 3 
+epochs : 50 
+num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
+
+batch_size_1 : 32
+batch_size_2 : 32
+output_size : 1
+csv_columns : ["laterality", "view", "age", "implant"]
+input_path : "/kaggle/input/dicom2png512x512/dicom2png_512"
+debug : False
+
+preprocess:
+  sampling : "down"
+  img_version : "v3"
+
+optimizer:
+  name : "Adam"
+  learning_rate : 0.001
+  weight_decay : 0.0
+
+scheduler:
+  name : "ReduceLROnPlateau"
+  mode : "min"
+  patience : 3
+  factor : 0.4
+
+aug:
+  version: "v0.0.2"
+  vertical_flip : 0.5
+  horizontal_flip : 0.5
