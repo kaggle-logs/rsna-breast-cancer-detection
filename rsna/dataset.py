@@ -65,15 +65,11 @@ class RSNADatasetPNG(Dataset):
         '''Take each row in batcj at a time.'''
         
         # Select path and read image
+        # デフォルトではグレースケールで画像を読み込んでいる
         image_path = self.dataframe['path'][index]
         image = prep.load_img(image_path)
 
         # preprocess
-        # - laterality = R なら左右反転 (encodeされているので0/1)
-#        if prep.is_flip_side(image):
-#            image = np.fliplr(image)
-#        # - 胸部のみ抽出
-#        image, _ = prep.get_breast_region_2(image)
         image, aux = self.breast_prep.get_breast_region(image)
         
         # For this image also import .csv information
