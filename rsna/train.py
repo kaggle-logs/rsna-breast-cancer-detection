@@ -6,6 +6,7 @@ import gc
 import datetime as dtime
 from datetime import datetime
 from sklearn.model_selection import StratifiedKFold, GroupKFold
+import pickle
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
@@ -66,6 +67,11 @@ def train(df_data : pd.DataFrame,
         # --- Read in Data ---
         train_data = df_data.iloc[train_index].reset_index(drop=True)
         valid_data = df_data.iloc[valid_index].reset_index(drop=True)
+
+        with open(f"train_index_fold{idx_fold}.pkl", "wb") as f:
+            pickle.dump(train_index, f)
+        with open(f"valid_index_fold{idx_fold}.pkl", "wb") as f:
+            pickle.dump(valid_index, f)
 
         # Create Data instances
         train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True)
