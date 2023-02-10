@@ -103,6 +103,18 @@ class BreastPreprocessor:
             else:
                 return False
 
+    def is_background_white(self, img):
+        # 列方向に画素値の総和を取る
+        left, right = np.array_split(np.sum(img, axis=0), 2)
+        if np.var(left) < np.var(right) : 
+            low_var_region  = left
+        else : 
+            low_var_region = right
+        
+        if np.mean(low_var_region) > 100 : 
+            return True
+        else:
+            return False
 
     def crop_coords(self, img):
         """
@@ -245,6 +257,22 @@ class BreastPreprocessor:
 
         return img_final, [img_cropped,]
 
+    
+    def _get_breast_region_4(self, img):
+        orig_shape = img.shape
+
+        # 胸部反転処理
+        if self.is_flip_side(img, mode="var"):
+            img = np.fliplr(img)
+
+        # クロップ
+        (x, y, w, h) = self.crop_coords(img)
+        img_cropped = img[y:y+h, x:x+w]
+
+        # Resize the image to the final shape. 
+        img_final = cv2.resize(img_cropped, orig_shape)
+
+        return img_final, [img_cropped,]
 
 
 class Transform():

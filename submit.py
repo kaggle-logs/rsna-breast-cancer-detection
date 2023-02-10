@@ -8,8 +8,8 @@ import argparse
 from joblib import Parallel, delayed
 
 # local
-from rsna.utility import load_data, preprocess, data_to_device, dicom2png
-from rsna.preprocess import Transform
+from rsna.utility import load_data, data_to_device, dicom2png
+from rsna.preprocess import Transform, df_preprocess
 from rsna.model import ResNet50Network, EfficientNet
 from rsna.config import DEVICE, PLATFORM
 from rsna.dataset import RSNADatasetPNG
@@ -53,7 +53,7 @@ if __name__ == "__main__" :
     # any platform will have 'tmp' directory under the current dir
     df_test = load_data("test", custom_path="tmp")
     prediction_id = df_test["patient_id"] + "_" + df_test["laterality"] 
-    df_test = preprocess(df_test, is_train=False)
+    df_test = df_preprocess(df_test, is_train=False)
     
     # load trained model
     # model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
