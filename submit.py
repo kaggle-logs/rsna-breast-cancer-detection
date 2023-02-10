@@ -63,7 +63,7 @@ if __name__ == "__main__" :
 
     # dataset, dataloader
     transform = Transform(cfg=None, only_test=True) 
-    test_dataset = RSNADatasetPNG(df_test, transform.get(is_train=False), csv_columns = ["laterality", "view", "age", "implant"], has_target=False)
+    test_dataset = RSNADatasetPNG(df_test, transform.get(is_train=False), csv_columns = ["laterality", "view", "age", "implant"], has_target=False, image_prep_ver="v3")
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
     # predict
