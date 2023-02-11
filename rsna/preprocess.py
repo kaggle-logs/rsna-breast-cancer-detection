@@ -58,6 +58,8 @@ def df_preprocess(data, is_train = True, sampling="up"):
 
     # print("Number of missing values in Age:", data["age"].isna().sum())
     data['age'] = data['age'].fillna(int(data["age"].mean()))
+    
+    data['patient_id'] = data['patient_id'].astype(int)
 
     # reset index
     data = data.reset_index(drop=True)
