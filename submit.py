@@ -18,6 +18,7 @@ if __name__ == "__main__" :
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", type=str, required=True)
+    parser.add_argument("-s", "--score", type=str, default="max")
     args = parser.parse_args()
     
     # DICOM --> PNG 
@@ -79,7 +80,11 @@ if __name__ == "__main__" :
     df_submit = pd.DataFrame()
     df_submit["prediction_id"] = prediction_id # add new column
     df_submit["cancer"] = predict_list
-    df_submit = df_submit.groupby("prediction_id").max()
+
+    if args.score == "max" : 
+        df_submit = df_submit.groupby("prediction_id").max()
+    elif args.score == "mean" : 
+        df_submit = df_submit.groupby("prediction_id").mean()
     df_submit = df_submit.sort_index()
     df_submit.to_csv('submission.csv', index=True)
 
