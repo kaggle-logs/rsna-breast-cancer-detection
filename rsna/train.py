@@ -95,7 +95,7 @@ def train(df_data : pd.DataFrame,
             #   TRAIN
             # ------------------------------------------------------
             # for monitorin
-            list_train_preds, list_train_targets = [], []
+            list_train_preds, list_train_targets, list_train_patient_id = [], [], []
             running_train_loss = 0.0
 
             # Sets the module in training mode.
@@ -108,7 +108,7 @@ def train(df_data : pd.DataFrame,
                 #   - image   : [BS, C, W, H]
                 #   - meta    : [BS, 4]
                 #   - targets : [BS,] <-- add a dim with unsqueeze(1) if needed
-                image, meta, targets = data_to_device(data)
+                image, meta, targets, patient_id = data_to_device(data)
 
                 # 1. clear gradients
                 optimizer.zero_grad()
@@ -131,6 +131,8 @@ def train(df_data : pd.DataFrame,
                 #   - acc
                 list_train_targets.extend(targets.cpu().numpy())
                 list_train_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy()) 
+                #   - patient_id
+                list_train_patient_id.extend(patient_id.squeeze(1).cpu().detach().numpy()) 
 
                 # clean memory
                 del data, image, meta, targets, out, loss
@@ -147,6 +149,32 @@ def train(df_data : pd.DataFrame,
             train_loss = running_train_loss / len(train_loader)
             train_pfbeta = pfbeta(list_train_targets, list_train_preds, 1)
             train_precision, train_recall, train_f1 = rsna_precision_recall_f1(list_train_targets, list_train_preds)
+            
+            # create dict
+            patient_id_target, patient_id_pred_list = {}, {}
+            for patiend_id, target, pred in zip(list_train_patient_id, list_train_targets, list_train_preds):
+                if not patient_id_pred.get(patient_id, False) : 
+                    patient_id_pred[patient_id] = [pred,]
+                    patient_id_target[patient_id] = target
+                else :
+                    patient_id_pred[patient_id].append(pred)
+            ###
+            patient_id_pred_mean, patient_id_pred_median, patient_id_pred_min, patient_id_pred_max ={}, {}, {}, {}
+            for patient_id, values in patient_id_pred_list.items():
+                values = np.array(values)
+                patient_id_pred_mean[patient_id] = np.mean(values)
+                patient_id_pred_median[patient_id] = np.median(values)
+                patient_id_pred_min[patient_id] = np.min(values)
+                patient_id_pred_max[patient_id] = np.max(values)
+            ###
+            tmp_patitne_target, tmp_patient_pred = [], []
+            for patient_id in patient_id_target.keys():
+                tmp_patient_target.append(patient_id_target[patient_id])
+                tmp_patient_pred_max.append(patient_id_pred_max[patient_id])
+                tmp_patient_pred_min.append(patient_id_pred_min[patient_id])
+                tmp_patient_pred_mean.append(patient_id_pred_mean[patient_id])
+                tmp_patient_pred_median.append(patient_id_pred_median[patient_id])
+
 
             # mlflow logs
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_acc", train_acc, step=epoch)
@@ -155,6 +183,10 @@ def train(df_data : pd.DataFrame,
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_precision", train_precision, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_recall", train_recall, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_f1", train_f1, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_patient_pfbeta_max", pfbeta(tmp_patient_target, tmp_patient_pred_max), step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_patient_pfbeta_min", pfbeta(tmp_patient_target, tmp_patient_pred_min), step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_patient_pfbeta_medium",pfbeta(tmp_patient_target, tmp_patient_pred_median),  step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_patient_pfbeta_mean",pfbeta(tmp_patient_target, tmp_patient_pred_mean),  step=epoch)
 
 
 
@@ -162,7 +194,7 @@ def train(df_data : pd.DataFrame,
             #   EVAL
             # ------------------------------------------------------
             # for monitoring
-            list_valid_targets, list_valid_preds = [], []
+            list_valid_targets, list_valid_preds, list_valid_patient_id = [], [], []
             running_valid_loss = 0.0
 
             # Sets the model in evaluation mode.
@@ -171,7 +203,7 @@ def train(df_data : pd.DataFrame,
             with torch.no_grad():
                 for idx, data in enumerate(valid_loader):
                     # Save them to device
-                    image, meta, targets = data_to_device(data)
+                    image, meta, targets, patient_id = data_to_device(data)
                     
                     # infer
                     out = model(image, meta)
@@ -185,6 +217,8 @@ def train(df_data : pd.DataFrame,
                     #   - acc
                     list_valid_targets.extend(targets.cpu().numpy())
                     list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
+                    #   - patient_id
+                    list_valid_patient_id.extend(patient_id.squeeze(1).cpu().detach().numpy()) 
                    
                     # clean memory
                     del data, image, meta, targets, loss
@@ -198,6 +232,31 @@ def train(df_data : pd.DataFrame,
                 valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
                 valid_pfbeta = pfbeta(list_valid_targets, list_valid_preds, 1)
                 valid_precision, valid_recall, valid_f1 = rsna_precision_recall_f1(list_valid_targets, list_valid_preds)
+            
+                # create dict
+                patient_id_target, patient_id_pred_list = {}, {}
+                for patiend_id, target, pred in zip(list_valid_patient_id, list_valid_targets, list_valid_preds):
+                    if not patient_id_pred.get(patient_id, False) : 
+                        patient_id_pred[patient_id] = [pred,]
+                        patient_id_target[patient_id] = target
+                    else :
+                        patient_id_pred[patient_id].append(pred)
+                ###
+                patient_id_pred_mean, patient_id_pred_median, patient_id_pred_min, patient_id_pred_max ={}, {}, {}, {}
+                for patient_id, values in patient_id_pred_list.items():
+                    values = np.array(values)
+                    patient_id_pred_mean[patient_id] = np.mean(values)
+                    patient_id_pred_median[patient_id] = np.median(values)
+                    patient_id_pred_min[patient_id] = np.min(values)
+                    patient_id_pred_max[patient_id] = np.max(values)
+                ###
+                tmp_patitne_target, tmp_patient_pred = [], []
+                for patient_id in patient_id_target.keys():
+                    tmp_patient_target.append(patient_id_target[patient_id])
+                    tmp_patient_pred_max.append(patient_id_pred_max[patient_id])
+                    tmp_patient_pred_min.append(patient_id_pred_min[patient_id])
+                    tmp_patient_pred_mean.append(patient_id_pred_mean[patient_id])
+                    tmp_patient_pred_median.append(patient_id_pred_median[patient_id])
 
                 # print
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
@@ -210,6 +269,10 @@ def train(df_data : pd.DataFrame,
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_precision", valid_precision, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_recall", valid_recall, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_f1", valid_f1, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_patient_pfbeta_max", pfbeta(tmp_patient_target, tmp_patient_pred_max), step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_patient_pfbeta_min", pfbeta(tmp_patient_target, tmp_patient_pred_min), step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_patient_pfbeta_medium",pfbeta(tmp_patient_target, tmp_patient_pred_median),  step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_patient_pfbeta_mean",pfbeta(tmp_patient_target, tmp_patient_pred_mean),  step=epoch)
 
                 # Update scheduler (for learning_rate)
                 scheduler.step(valid_loss)
