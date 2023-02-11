@@ -138,7 +138,7 @@ def train(df_data : pd.DataFrame,
                 list_train_targets.extend(targets.cpu().numpy())
                 list_train_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy()) 
                 #   - patient_id
-                list_train_patient_id.extend(patient_id.squeeze(1).cpu().detach().numpy()) 
+                list_train_patient_id.extend(patient_id.cpu().detach().numpy()) 
 
                 # clean memory
                 del data, image, meta, targets, out, loss
@@ -224,7 +224,7 @@ def train(df_data : pd.DataFrame,
                     list_valid_targets.extend(targets.cpu().numpy())
                     list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
                     #   - patient_id
-                    list_valid_patient_id.extend(patient_id.squeeze(1).cpu().detach().numpy()) 
+                    list_valid_patient_id.extend(patient_id.cpu().detach().numpy()) 
                    
                     # clean memory
                     del data, image, meta, targets, loss
