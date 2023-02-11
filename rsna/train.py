@@ -109,6 +109,7 @@ def train(df_data : pd.DataFrame,
             # For each batch                
             # for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             for idx, data in enumerate(train_loader):
+                print(data)
                 # Save them to device
                 #   - image   : [BS, C, W, H]
                 #   - meta    : [BS, 4]
