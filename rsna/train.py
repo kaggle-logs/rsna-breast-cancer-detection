@@ -5,7 +5,7 @@ from time import time
 import gc
 import datetime as dtime
 from datetime import datetime
-from sklearn.model_selection import StratifiedKFold, GroupKFold
+from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
 import pickle
 
 import torch
@@ -32,19 +32,33 @@ def train(df_data : pd.DataFrame,
           run_id : int ):
     print(">>>>> train start.")
     
-    # Split in folds
-    group_fold = GroupKFold(n_splits = cfg.fold)
-
-    # Generate indices to split data into training and test set.
-    k_folds = group_fold.split(X = np.zeros(len(df_data)), 
-                               y = df_data['cancer'], 
-                               groups = df_data['patient_id'].tolist())
     # 前処理関数の定義 (for Dataset)
     transform = Transform(cfg) 
+    
+    # Split in folds
+    #   - GroupKFold : random_state がない、shuffle がないので、KFold を使って grouped k-fold を再現している
+    kfold = KFold(n_splits=cfg.fold, shuffle=True, random_state=1993)
+    unique_patient_id = df_data["patient_id"].unique()
+    patient_id = df_data["patient_id"]
 
     # For each fold
-    for idx_fold, (train_index, valid_index) in enumerate(k_folds):
-        print(f"-------- Fold #{idx_fold}")
+    for idx_fold, (train_index, valid_index) in enumerate(kfold.split(unique_patient_id)):
+
+        # --- Read in Data ---
+        # index --> patient id
+        train_patient_id, valid_patient_id = unique_patient_id[train_index], unique_patient_id[valid_index]
+        is_train = patient_id.isin(train_patient_id)
+        is_valid = patient_id.isin(valid_patient_id)
+
+        train_data = df_data[is_train].reset_index(drop=True)
+        valid_data = df_data[is_valid].reset_index(drop=True)
+
+        with open(f"train_index_fold{idx_fold}.pkl", "wb") as f:
+            pickle.dump(train_index, f)
+        with open(f"valid_index_fold{idx_fold}.pkl", "wb") as f:
+            pickle.dump(valid_index, f)
+
+        print(f"-------- Fold #{idx_fold} #train={len(train_data)}, #valid={len(valid_data)}")
 
         # --- model init
         model = EfficientNet(pretrained=True).to(DEVICE)
@@ -63,15 +77,6 @@ def train(df_data : pd.DataFrame,
 
         # --- Loss
         criterion = nn.BCEWithLogitsLoss()
-
-        # --- Read in Data ---
-        train_data = df_data.iloc[train_index].reset_index(drop=True)
-        valid_data = df_data.iloc[valid_index].reset_index(drop=True)
-
-        with open(f"train_index_fold{idx_fold}.pkl", "wb") as f:
-            pickle.dump(train_index, f)
-        with open(f"valid_index_fold{idx_fold}.pkl", "wb") as f:
-            pickle.dump(valid_index, f)
 
         # Create Data instances
         train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
@@ -223,3 +228,8 @@ def train(df_data : pd.DataFrame,
 
         del train_dataset, valid_dataset, train_loader, valid_loader, model
         gc.collect()
+
+        # 途中で fold を break する
+        #   - k-fold の設定のまま、擬似的に hold_out を再現する (ex. -1 なら test_size = 1/k の hold_out)
+        if idx_fold > cfg.fold_break : 
+            break

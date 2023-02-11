@@ -21,11 +21,15 @@ def main(cfg : DictConfig) -> None:
     # --- mlflow start
     client = mlflow.tracking.MlflowClient()
     # create exp
-    experiment = "experiment"
+    if PLATFORM == "kaggle" : 
+        experiment_name = "kaggle"
+    elif PLATFORM == "local" : 
+        experiment_name = "local"
+
     try:
-        exp_id = client.create_experiment(experiment)
+        exp_id = client.create_experiment(experiment_name)
     except:
-        exp_id = client.get_experiment_by_name(experiment).experiment_id
+        exp_id = client.get_experiment_by_name(experiment_name).experiment_id
     
     # MLFlow system tags 
     # - https://mlflow.org/docs/latest/tracking.html?highlight=commit#system-tags
