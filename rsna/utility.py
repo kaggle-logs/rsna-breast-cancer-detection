@@ -55,11 +55,11 @@ def load_data(f_name, custom_path = None):
 
 def data_to_device(data, is_train = True):
     if is_train:
-        image, metadata, targets, patient_id = data.values()
-        return image.to(DEVICE), metadata.to(DEVICE), targets.to(DEVICE), patient_id.to(DEVICE)
+        image, metadata, targets, prediction_id = data.values()
+        return image.to(DEVICE), metadata.to(DEVICE), targets.to(DEVICE), prediction_id
     else:
-        image, metadata, patient_id = data.values()
-        return image.to(DEVICE), metadata.to(DEVICE), patient_id.to(DEVICE)
+        image, metadata, prediction_id = data.values()
+        return image.to(DEVICE), metadata.to(DEVICE), prediction_id
 
 def dicom2png(fname, PNG_SIZE=(256,256), mode="dicomsdl"):
 
