@@ -83,10 +83,10 @@ class RSNADatasetPNG(Dataset):
             return {"image": transf_image, 
                     "meta": csv_data, 
                     "target": self.dataframe['cancer'][index],
-                    "prediction_id"  :self.dataframe['patient_id'][index] + "_" self.dataframe["laterality"]
+                    "prediction_id"  :self.dataframe['patient_id'][index] + "_" self.dataframe["laterality"][index]
                     }
         else:
             return {"image": transf_image, 
                     "meta": csv_data, 
-                    "prediction_id"  :self.dataframe['patient_id'][index] + "_" self.dataframe["laterality"]
+                    "prediction_id"  :self.dataframe['patient_id'][index] + "_" self.dataframe["laterality"][index]
                     }
