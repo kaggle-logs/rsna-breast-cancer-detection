@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import cv2
 import pathlib 
 import torch
@@ -53,8 +54,8 @@ if __name__ == "__main__" :
     # input path (png) 
     # any platform will have 'tmp' directory under the current dir
     df_test = load_data("test", custom_path="tmp")
-    prediction_id = df_test["patient_id"] + "_" + df_test["laterality"] 
     df_test = df_preprocess(df_test, is_train=False)
+    prediction_id = df_test["patient_id"] + "_" + df_test["laterality"] 
     
     # load trained model
     # model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
@@ -64,27 +65,31 @@ if __name__ == "__main__" :
 
     # dataset, dataloader
     transform = Transform(cfg=None, only_test=True) 
-    test_dataset = RSNADatasetPNG(df_test, transform.get(is_train=False), csv_columns = ["laterality", "view", "age", "implant"], has_target=False, image_prep_ver="v3")
+    test_dataset = RSNADatasetPNG(df_test, transform.get(is_train=False), csv_columns = ["laterality_LE", "view_LE", "age", "implant"], has_target=False, image_prep_ver="v3")
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
 
     # predict
-    predict_list = []
+    predict_pID = {}
     for data in test_loader:
-        image, meta = data_to_device(data, is_train=False)
+        image, meta, prediction_ids = data_to_device(data, is_train=False)
 
         out = model(image, meta)
-        pred = torch.sigmoid(out)
+        preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
 
-        predict_list.extend(pred.detach().numpy().flatten())
+        for prediction_id, pred in zip(prediction_ids, preds) : 
+            if not predict_pID.get(prediction_id, False) :
+                predict_pID[prediction_id] = [pred,]
+            else :
+                predict_pID[prediction_id].append(pred)
+
+    list_prediction_id, list_target = [], []
+    for k, v in predict_pID.items():
+        list_prediction_id.append(k)
+        list_target.append(np.max(v))
 
     df_submit = pd.DataFrame()
-    df_submit["prediction_id"] = prediction_id # add new column
-    df_submit["cancer"] = predict_list
-
-    if args.score == "max" : 
-        df_submit = df_submit.groupby("prediction_id").max()
-    elif args.score == "mean" : 
-        df_submit = df_submit.groupby("prediction_id").mean()
+    df_submit["prediction_id"] = list_prediction_id # add new column
+    df_submit["cancer"] =list_target 
     df_submit = df_submit.sort_index()
     df_submit.to_csv('submission.csv', index=True)
 
