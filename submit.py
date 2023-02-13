@@ -55,10 +55,8 @@ if __name__ == "__main__" :
     # any platform will have 'tmp' directory under the current dir
     df_test = load_data("test", custom_path="tmp")
     df_test = df_preprocess(df_test, is_train=False)
-    prediction_id = df_test["patient_id"] + "_" + df_test["laterality"] 
     
     # load trained model
-    # model = ResNet50Network(output_size=1, num_columns=4, is_train=False).to(DEVICE) 
     model = EfficientNet(pretrained=False).to(DEVICE) 
     model.load_state_dict(torch.load(f"{args.model}", map_location=torch.device(DEVICE)))
     model.eval()
