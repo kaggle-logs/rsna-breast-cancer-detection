@@ -1,3 +1,4 @@
+import os
 import torch
 import mlflow
 import subprocess
@@ -64,4 +65,8 @@ def main(cfg : DictConfig) -> None:
 if __name__ == "__main__" : 
     print('Device available now:', DEVICE)
     fix_seed()
+    # output dir
+    os.makedirs("models/", exist_ok=True)
+    os.makedirs("metrics/", exist_ok=True)
+    # 
     main()
