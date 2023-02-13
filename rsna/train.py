@@ -144,8 +144,7 @@ def train(df_data : pd.DataFrame,
                     if not dict_train_pID.get(prediction_id, False) :
                         # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
                         # （同じprediction_idに別のy_trueが振られていることがある？？）
-                        dict_train_pID[prediction_id] = {"target" : target}
-                        dict_train_pID[prediction_id] = {"pred" : [pred,]}
+                        dict_train_pID[prediction_id] = {"target" : target, "pred" : [pred,]}
                     else :
                         dict_train_pID[prediction_id]["pred"].append(pred)
 
@@ -156,7 +155,7 @@ def train(df_data : pd.DataFrame,
                 # mem = psutil.virtual_memory()
                 # print(f"mem = {mem.used}, {mem.available}, GPU allocated memory = {torch.cuda.memory_allocated(device=DEVICE)}")
 
-                if cfg.debug : 
+                if cfg.debug: 
                     break # for debug
 
             # Compute Train Accuracy
@@ -224,8 +223,7 @@ def train(df_data : pd.DataFrame,
                         if not dict_valid_pID.get(prediction_id, False) :
                             # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
                             # （同じprediction_idに別のy_trueが振られていることがある？？）
-                            dict_valid_pID[prediction_id] = {"target" : target}
-                            dict_valid_pID[prediction_id] = {"pred" : [pred,]}
+                            dict_valid_pID[prediction_id] = {"target" : target, "pred" : [pred,]}
                         else :
                             dict_valid_pID[prediction_id]["pred"].append(pred)
                    
@@ -233,7 +231,7 @@ def train(df_data : pd.DataFrame,
                     del data, image, meta, targets, loss
                     gc.collect()
 
-                    if cfg.debug : 
+                    if cfg.debug: 
                         break
 
                 # Calculate metrics (acc, roc)
@@ -255,6 +253,7 @@ def train(df_data : pd.DataFrame,
                 # print
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
                 print(logs_per_epoch)
+                print(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)}')
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
@@ -271,8 +270,14 @@ def train(df_data : pd.DataFrame,
                 # Update scheduler (for learning_rate)
                 scheduler.step(valid_loss)
 
+            # metrics save
+            with open(f"metrics/f{idx_fold+1}_dict_train_pID.pkl", "wb") as f:
+                pickle.dump(dict_train_pID, f)
+            with open(f"metrics/f{idx_fold+1}_dict_valid_pID.pkl", "wb") as f:
+                pickle.dump(dict_valid_pID, f)
+
             # model save
-            model_name = f"model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
+            model_name = f"models/model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
             if TPU:
                 xm.save(model.state_dict(), model_name)
             else:
