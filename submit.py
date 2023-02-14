@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 import argparse
 from joblib import Parallel, delayed
+import subprocess
 
 # local
 from rsna.utility import load_data, data_to_device, dicom2png
@@ -36,7 +37,8 @@ if __name__ == "__main__" :
 
     def process(fname):
         img = dicom2png(str(fname), PNG_SIZE=(512,512))
-        cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
+        # cv2.imwrite(f"tmp/{patient_id.name}/{fname.name}".replace("dcm", "png"), img)
+        subprocess.run([f"touch tmp/{patient_id.name}/{fname.name}".replace("dcm", "png")], shell=True)
 
     for patient_id in pathlib.Path(test_path).glob("*") : 
         if patient_id.name in [".DS_Store",] : continue # macOS
@@ -53,7 +55,8 @@ if __name__ == "__main__" :
     
     # input path (png) 
     # any platform will have 'tmp' directory under the current dir
-    df_test = load_data("test", custom_path="tmp")
+    # df_test = load_data("test", custom_path="tmp")
+    df_test = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_512")
     df_test = df_preprocess(df_test, is_train=False)
     
     # load trained model
@@ -71,8 +74,9 @@ if __name__ == "__main__" :
     for data in test_loader:
         image, meta, prediction_ids = data_to_device(data, is_train=False)
 
-        out = model(image, meta)
-        preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
+        # out = model(image, meta)
+        # preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
+        preds = np.zeros((len(data["image"]),1)).flatten()
 
         for prediction_id, pred in zip(prediction_ids, preds) : 
             if not predict_pID.get(prediction_id, False) :
@@ -87,7 +91,8 @@ if __name__ == "__main__" :
 
     df_submit = pd.DataFrame()
     df_submit["prediction_id"] = list_prediction_id # add new column
-    df_submit["cancer"] =list_target 
+    # df_submit["cancer"] =list_target 
+    df_submit["cancer"] = [1] * len(list_prediction_id)
     df_submit = df_submit.sort_index()
     df_submit.to_csv('submission.csv', index=True)
 

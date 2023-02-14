@@ -63,6 +63,14 @@ class RSNADatasetPNG(Dataset):
     
     def __getitem__(self, index):
         '''Take each row in batcj at a time.'''
+
+        # debug
+        csv_data = np.array(self.dataframe.iloc[index][self.csv_columns].values, 
+                            dtype=np.float32)
+        return {"image": 0,
+                "meta": csv_data, 
+                "prediction_id"  : str(self.dataframe['patient_id'][index]) + "_" + str(self.dataframe["laterality"][index])
+                }
         
         # Select path and read image
         # デフォルトではグレースケールで画像を読み込んでいる
