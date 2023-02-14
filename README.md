@@ -81,6 +81,18 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 # Log
 
+## 2023/02/14
+
+- submit が failed になっていた (v.25)
+  - score 0.06 止まりの debug 中
+  - なにか理解が足りていない
+  - ひとまず、prediction_id は読み取ったまま、pred score = 1 の予測を行う test submit を行ってみる（submit, dataset.py の編集） 
+  - 単純にsubmission.csv のフォーマットが間違っていたっぽい（index=Trueとしていたので3列の出力になっていて、フォーマットが異なっていた）
+```
+Your notebook generated a submission file with incorrect format. Some examples causing this are: wrong number of rows or columns, empty values, an incorrect data type for a value, or invalid submission values from what is expected. See more debugging tips
+```
+
+
 ## 2023/02/10
 
 - 画像の前処理（胸部選択、正規化など）を修正
