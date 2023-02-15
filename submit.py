@@ -21,6 +21,7 @@ if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", type=str, required=True)
     parser.add_argument("-s", "--score", type=str, default="max")
+    parser.add_argument("-t", "--threshold", type=float, default=None)
     args = parser.parse_args()
     
     # DICOM --> PNG 
@@ -88,7 +89,12 @@ if __name__ == "__main__" :
 
     df_submit = pd.DataFrame()
     df_submit["prediction_id"] = list_prediction_id # add new column
-    df_submit["cancer"] =list_target 
+    if args.threshold : 
+        list_target = np.array(list_target)
+        list_target = np.where(list_target>args.threhold, 1, 0)
+        df_submit["cancer"] = list_target 
+    else:
+        df_submit["cancer"] = list_target 
     df_submit = df_submit.sort_index()
     df_submit.to_csv('submission.csv', index=False)
 
