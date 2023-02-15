@@ -10,7 +10,6 @@ import pickle
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
-import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.cuda.amp import GradScaler, autocast
 
@@ -19,6 +18,7 @@ from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG
 from rsna.preprocess import Transform
 from rsna.model import EfficientNet
+from rsna.loss import get_loss
 from rsna.config import DEVICE, TPU
 from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1
 
@@ -77,7 +77,7 @@ def train(df_data : pd.DataFrame,
             raise NotImplementedError(cfg.scheduler.name)
 
         # --- Loss
-        criterion = nn.BCEWithLogitsLoss()
+        criterion = get_loss(cfg)
         
         # --- Scaler
         scaler = GradScaler()

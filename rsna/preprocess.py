@@ -32,7 +32,10 @@ def df_preprocess(data, is_train = True, sampling="up"):
         data_cancer_1 = data[data["cancer"]==1]
         # oversampling 
         #   - replace : 重複を許す (True)
-        if sampling == "up":
+        if sampling == "normal":
+            # そのまま
+            pass
+        elif sampling == "up":
             # 正例を upsamling する
             data_cancer_1_over = resample(data_cancer_1, replace=True, n_samples=len(data_cancer_0), random_state=27)
             data = pd.concat([data_cancer_0, data_cancer_1_over])
