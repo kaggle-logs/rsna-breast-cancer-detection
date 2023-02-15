@@ -1,6 +1,6 @@
 fold : 10 
 fold_break : -1
-epochs : 50 
+epochs : 20 
 num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
 autocast : True
 model_name : "efficientnet_b4"
