@@ -91,7 +91,7 @@ if __name__ == "__main__" :
     df_submit["prediction_id"] = list_prediction_id # add new column
     if args.threshold : 
         list_target = np.array(list_target)
-        list_target = np.where(list_target>args.threhold, 1, 0)
+        list_target = np.where(list_target>args.threshold, 1, 0)
         df_submit["cancer"] = list_target 
     else:
         df_submit["cancer"] = list_target 
