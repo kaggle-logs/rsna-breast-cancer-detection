@@ -1,12 +1,12 @@
 fold : 10 
-fold_break : -1
-epochs : 20 
+fold_break : 2 
+epochs : 25 
 num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
 autocast : True
 model_name : "efficientnet_b4"
 
-batch_size_1 : 32
-batch_size_2 : 32
+batch_size_1 : 16 
+batch_size_2 : 16 
 output_size : 1
 csv_columns : ["laterality_LE", "view_LE", "age", "implant"]
 input_path : "/kaggle/input/dicom2png512x512/dicom2png_512"
