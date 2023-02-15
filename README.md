@@ -27,6 +27,7 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 ## Train
 
+- [Gスプレッドシート](https://docs.google.com/spreadsheets/d/1fptDrv9UpIY_rNCvU_pJYCZCChbbIrsihzD7oViFOXA/edit?usp=sharing)
 
 ### 学習時
 1. コードをローカルで修正し、動作試験を実施
