@@ -62,7 +62,7 @@ def train(df_data : pd.DataFrame,
         print(f"-------- Fold #{idx_fold} #train={len(train_data)}, #valid={len(valid_data)}")
 
         # --- model init
-        model = EfficientNet(pretrained=True).to(DEVICE)
+        model = EfficientNet(model_name=cfg.model_name, pretrained=True).to(DEVICE)
 
         # --- Optimizer
         if cfg.optimizer.name == "Adam" :
