@@ -12,6 +12,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader, Subset
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.cuda.amp import GradScaler, autocast
 
 # local
 from rsna.utility import data_to_device
@@ -77,6 +78,9 @@ def train(df_data : pd.DataFrame,
 
         # --- Loss
         criterion = nn.BCEWithLogitsLoss()
+        
+        # --- Scaler
+        scaler = GradScaler()
 
         # Create Data instances
         train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
@@ -110,26 +114,30 @@ def train(df_data : pd.DataFrame,
             # For each batch                
             # for k, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             for idx, data in enumerate(train_loader):
-                # Save them to device
-                #   - image   : [BS, C, W, H]
-                #   - meta    : [BS, 4]
-                #   - targets : [BS,] <-- add a dim with unsqueeze(1) if needed
-                image, meta, targets, prediction_ids = data_to_device(data)
+                with autocast(enabled=cfg.autocast):
+                    # Save them to device
+                    #   - image   : [BS, C, W, H]
+                    #   - meta    : [BS, 4]
+                    #   - targets : [BS,] <-- add a dim with unsqueeze(1) if needed
+                    image, meta, targets, prediction_ids = data_to_device(data)
 
-                # 1. clear gradients
-                optimizer.zero_grad()
-                # 2. forward
-                #   - out : [BS, 1]
-                out = model(image, meta)
-                # 3. calc loss
-                loss = criterion(out, targets.unsqueeze(1).float())
+                    # 1. clear gradients
+                    optimizer.zero_grad()
+                    # 2. forward
+                    #   - out : [BS, 1]
+                    out = model(image, meta)
+                    # 3. calc loss
+                    loss = criterion(out, targets.unsqueeze(1).float())
+                
                 # 4. Backward
-                loss.backward()
+                scaler.scale(loss).backward()
                 # 5. update weights
                 if TPU : 
                     xm.optimizer_step(optimizer,barrier=True)
                 else : 
-                    optimizer.step()
+                    scaler.step(optimizer)
+
+                scaler.update()
 
                 # Save information
                 #   - loss
@@ -201,31 +209,33 @@ def train(df_data : pd.DataFrame,
             model.eval()
             with torch.no_grad():
                 for idx, data in enumerate(valid_loader):
-                    # Save them to device
-                    image, meta, targets, prediction_ids = data_to_device(data)
+
+                    with autocast(enabled=cfg.autocast):
+                        # Save them to device
+                        image, meta, targets, prediction_ids = data_to_device(data)
                     
-                    # infer
-                    out = model(image, meta)
+                        # infer
+                        out = model(image, meta)
 
-                    # calc loss
-                    loss = criterion(out, targets.unsqueeze(1).float())
+                        # calc loss
+                        loss = criterion(out, targets.unsqueeze(1).float())
 
-                    # Save information
-                    #   - loss
-                    running_valid_loss += loss.item()
-                    #   - acc
-                    list_valid_targets.extend(targets.cpu().numpy())
-                    list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
-                    #   - prediction_id
-                    targets = targets.cpu().numpy()
-                    preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
-                    for prediction_id, target, pred in zip(prediction_ids, targets, preds) : 
-                        if not dict_valid_pID.get(prediction_id, False) :
-                            # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
-                            # （同じprediction_idに別のy_trueが振られていることがある？？）
-                            dict_valid_pID[prediction_id] = {"target" : target, "pred" : [pred,]}
-                        else :
-                            dict_valid_pID[prediction_id]["pred"].append(pred)
+                        # Save information
+                        #   - loss
+                        running_valid_loss += loss.item()
+                        #   - acc
+                        list_valid_targets.extend(targets.cpu().numpy())
+                        list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
+                        #   - prediction_id
+                        targets = targets.cpu().numpy()
+                        preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
+                        for prediction_id, target, pred in zip(prediction_ids, targets, preds) : 
+                            if not dict_valid_pID.get(prediction_id, False) :
+                                # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
+                                # （同じprediction_idに別のy_trueが振られていることがある？？）
+                                dict_valid_pID[prediction_id] = {"target" : target, "pred" : [pred,]}
+                            else :
+                                dict_valid_pID[prediction_id]["pred"].append(pred)
                    
                     # clean memory
                     del data, image, meta, targets, loss
