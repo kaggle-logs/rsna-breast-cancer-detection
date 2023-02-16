@@ -174,7 +174,7 @@ class BreastPreprocessor:
 
     def get_breast_region(self, img):
         if self.version == "not-used":
-            return img
+            return img, []
         elif self.version == "v1":
             return self._get_breast_region_1(img)
         elif self.version == "v2":
