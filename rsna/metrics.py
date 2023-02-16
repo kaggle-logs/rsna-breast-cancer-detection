@@ -22,7 +22,7 @@ def rsna_precision_recall_f1(y_true, y_pred):
     return precision, recall, f1
 
 
-def pfbeta(labels, predictions, beta):
+def pfbeta(labels, predictions, beta=1.):
     y_true_count = 0
     ctp = 0
     cfp = 0
@@ -46,3 +46,9 @@ def pfbeta(labels, predictions, beta):
         return result
     else:
         return 0
+
+def optimal_f1(labels, predictions):
+    thres = np.linspace(0, 1, 101)
+    f1s = [pfbeta(labels, predictions > thr) for thr in thres]
+    idx = np.argmax(f1s)
+    return f1s[idx], thres[idx]

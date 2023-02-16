@@ -5,8 +5,11 @@ from time import time
 import gc
 import datetime as dtime
 from datetime import datetime
-from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
 import pickle
+
+# --- sklearn
+from sklearn.model_selection import StratifiedKFold, GroupKFold, KFold
+from sklearn.metrics import balanced_accuracy_score
 
 import torch
 from torch.utils.data import Dataset, DataLoader, Subset
@@ -20,7 +23,7 @@ from rsna.preprocess import Transform
 from rsna.model import EfficientNet
 from rsna.loss import get_loss
 from rsna.config import DEVICE, TPU
-from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1
+from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1, optimal_f1
 
 # for TPU
 if TPU:
@@ -64,7 +67,7 @@ def train(df_data : pd.DataFrame,
         print(f"-------- Fold #{idx_fold} #train={len(train_data)}, #valid={len(valid_data)}")
 
         # --- model init
-        model = EfficientNet(model_name=cfg.model_name, pretrained=True).to(DEVICE)
+        model = EfficientNet(model_name=cfg.model.model_name, pretrained=cfg.model.pretrained).to(DEVICE)
 
         # --- Optimizer
         if cfg.optimizer.name == "Adam" :
@@ -85,8 +88,8 @@ def train(df_data : pd.DataFrame,
         scaler = GradScaler()
 
         # Create Data instances
-        train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
-        valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_version)
+        train_dataset = RSNADatasetPNG(train_data, transform.get(is_train=True), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_prep_version)
+        valid_dataset = RSNADatasetPNG(valid_data, transform.get(is_train=False), cfg.csv_columns, has_target=True, image_prep_ver=cfg.preprocess.img_prep_version)
         
         # Dataloaders
         if TPU:
@@ -170,6 +173,7 @@ def train(df_data : pd.DataFrame,
 
             # Compute Train Accuracy
             train_acc = rsna_accuracy(list_train_targets, list_train_preds)
+            train_blacc = balanced_accuracy_score(list_train_targets, list_train_preds)
             train_loss = running_train_loss / len(train_loader)
             train_pfbeta = pfbeta(list_train_targets, list_train_preds, 1)
             train_precision, train_recall, train_f1 = rsna_precision_recall_f1(list_train_targets, list_train_preds)
@@ -183,14 +187,19 @@ def train(df_data : pd.DataFrame,
                 list_train_pID_pred_min.append(np.min(v["pred"]))
                 list_train_pID_pred_median.append(np.median(v["pred"]))
                 list_train_pID_pred_mean.append(np.mean(v["pred"]))
+            
+            train_optimal_f1, train_optimal_f1_thre = optimal_f1(list_train_pID_target, list_train_pID_pred_max)
 
             # mlflow logs
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_acc", train_acc, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_blacc", train_blacc, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_loss", train_loss, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_pfbeta", train_pfbeta, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_precision", train_precision, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_recall", train_recall, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_f1", train_f1, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_optimal_f1", train_optimal_f1, step=epoch)
+            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_optimal_f1_thre", train_optimal_f1_thre, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_prediction_id_pfbeta_max", pfbeta(list_train_pID_target, list_train_pID_pred_max, 1), step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_prediction_id_pfbeta_min", pfbeta(list_train_pID_target, list_train_pID_pred_min, 1), step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_prediction_id_pfbeta_medium",pfbeta(list_train_pID_target, list_train_pID_pred_median, 1),  step=epoch)
@@ -249,6 +258,7 @@ def train(df_data : pd.DataFrame,
                 # Calculate metrics (acc, roc)
                 valid_loss = running_valid_loss/len(valid_loader)
                 valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
+                valid_blacc = balanced_accuracy_score(list_valid_targets, list_valid_preds)
                 valid_pfbeta = pfbeta(list_valid_targets, list_valid_preds, 1)
                 valid_precision, valid_recall, valid_f1 = rsna_precision_recall_f1(list_valid_targets, list_valid_preds)
             
@@ -261,6 +271,8 @@ def train(df_data : pd.DataFrame,
                     list_valid_pID_pred_min.append(np.min(v["pred"]))
                     list_valid_pID_pred_median.append(np.median(v["pred"]))
                     list_valid_pID_pred_mean.append(np.mean(v["pred"]))
+                
+                valid_optimal_f1, valid_optimal_f1_thre = optimal_f1(list_valid_pID_target, list_valid_pID_pred_max)
 
                 # print
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
@@ -269,11 +281,14 @@ def train(df_data : pd.DataFrame,
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_blacc", valid_blacc, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_loss", valid_loss, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_pfbeta", valid_pfbeta, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_precision", valid_precision, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_recall", valid_recall, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_f1", valid_f1, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_optimal_f1", valid_optimal_f1, step=epoch)
+                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_optimal_f1_thre", valid_optimal_f1_thre, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_prediction_id_pfbeta_max", pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1), step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_prediction_id_pfbeta_min", pfbeta(list_valid_pID_target, list_valid_pID_pred_min, 1), step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_prediction_id_pfbeta_medium",pfbeta(list_valid_pID_target, list_valid_pID_pred_median, 1),  step=epoch)

@@ -173,7 +173,9 @@ class BreastPreprocessor:
         return cl
 
     def get_breast_region(self, img):
-        if self.version == "v1":
+        if self.version == "not-used":
+            return img
+        elif self.version == "v1":
             return self._get_breast_region_1(img)
         elif self.version == "v2":
             return self._get_breast_region_2(img)
@@ -321,6 +323,17 @@ class Transform():
                     RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.5, brightness_by_max=True, p=1.0),
                     CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=1.0),
                     Normalize(mean=(0,), std=(1,)),
+                    ToTensorV2(),
+                ])
+            elif cfg.aug.version == "v0.0.4" :
+                self.transform_train = Compose([
+                    ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]), # ランダムにアフィン変換を適用
+                    HorizontalFlip(p = cfg.aug.horizontal_flip), # 水平方向にフリップ
+                    VerticalFlip(p = cfg.aug.vertical_flip), # 垂直方向にフリップ
+                    RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.5, brightness_by_max=True, p=1.0),
+                    CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=1.0),
+                    Resize(1024,512),
+                    Normalize(mean=(0.2179,), std=(0.0529,)),
                     ToTensorV2(),
                 ])
             else:

@@ -27,7 +27,7 @@ def fix_seed(SEED=1993):
     os.environ['PYTHONHASHSEED'] = str(SEED)
 
 
-def load_data(f_name, custom_path = None):
+def load_data(f_name, custom_path = None, external=False):
     # Add path column
     
     # Read in Data
@@ -37,7 +37,10 @@ def load_data(f_name, custom_path = None):
 
     if PLATFORM == "kaggle" : 
         if custom_path : 
-            data["path"] = custom_path + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
+            if external :
+                data["path"] = custom_path + "/" + data["patient_id"] + "_" + data["image_id"] + ".png"
+            else:
+                data["path"] = custom_path + "/" + data["patient_id"] + "/" + data["image_id"] + ".png"
         else :
             data["path"] = INPUT_PATH + "/" + f_name + "_images/" + data["patient_id"] + "/" + data["image_id"] + ".dcm"
     elif PLATFORM == "local" : 
