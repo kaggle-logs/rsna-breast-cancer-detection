@@ -51,6 +51,8 @@ def train(df_data : pd.DataFrame,
         is_train = patient_id.isin(train_patient_id)
         is_valid = patient_id.isin(valid_patient_id)
 
+        # train : cancer=1 が 2%
+        # valid : cancer=1 が 1.7% (ある程度正しく train/valid で split できている)
         train_data = df_data[is_train].reset_index(drop=True)
         valid_data = df_data[is_valid].reset_index(drop=True)
 

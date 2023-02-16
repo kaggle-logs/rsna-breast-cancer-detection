@@ -82,6 +82,12 @@ Digital Imaging and Communications in Medicine（ダイコム）は医療用画�
 
 # Log
 
+
+## 2023/02/16
+
+- わかってしまった！upsampling, downsampling するときに、`resample(..., replace=True)` としており、重複して同じデータをサンプリングしていた。これを何も考えず train/valid に分割したので、Data leak（trainにもvalidにも含まれるデータが存在していた）が発生しており、CV スコア >> LB となっていた
+  - submit.py にバグはなく、data leakage だけだったのだろう...。ようやくスタートラインに立った気がする
+
 ## 2023/02/14
 
 - submit が failed になっていた (v.25)
