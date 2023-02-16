@@ -53,9 +53,9 @@ def main(cfg : DictConfig) -> None:
     # Ran it locally on all data, see the results below
 
     if PLATFORM == "kaggle" : 
-        df_train = load_data("train", custom_path=cfg.dataset.input_path)
+        df_train = load_data("train", custom_path=cfg.dataset.input_path, external=cfg.dataset.external)
     elif PLATFORM == "local" : 
-        df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256")
+        df_train = load_data("train", custom_path="/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/dicom2png_256", external=cfg.dataset.external)
     df_train = df_preprocess(df_train, is_train=True, sampling=cfg.preprocess.sampling)
 
     train(df_data=df_train, cfg=cfg, mlflow_client = client, run_id = run.info.run_id)
