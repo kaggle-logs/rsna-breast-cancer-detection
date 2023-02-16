@@ -4,8 +4,8 @@ epochs : 4
 num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
 autocast : True
 
-batch_size_1 : 16 
-batch_size_2 : 16 
+batch_size_1 : 8 
+batch_size_2 : 8 
 output_size : 1
 csv_columns : ["laterality_LE", "view_LE", "age", "implant"]
 
