@@ -173,7 +173,7 @@ def train(df_data : pd.DataFrame,
 
             # Compute Train Accuracy
             train_acc = rsna_accuracy(list_train_targets, list_train_preds)
-            train_blacc = balanced_accuracy_score(list_train_targets, list_train_preds)
+            # train_blacc = balanced_accuracy_score(list_train_targets, list_train_preds)
             train_loss = running_train_loss / len(train_loader)
             train_pfbeta = pfbeta(list_train_targets, list_train_preds, 1)
             train_precision, train_recall, train_f1 = rsna_precision_recall_f1(list_train_targets, list_train_preds)
@@ -192,7 +192,7 @@ def train(df_data : pd.DataFrame,
 
             # mlflow logs
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_acc", train_acc, step=epoch)
-            mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_blacc", train_blacc, step=epoch)
+            # mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_blacc", train_blacc, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_loss", train_loss, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_pfbeta", train_pfbeta, step=epoch)
             mlflow_client.log_metric(run_id, f"{idx_fold}fold_train_precision", train_precision, step=epoch)
@@ -258,7 +258,7 @@ def train(df_data : pd.DataFrame,
                 # Calculate metrics (acc, roc)
                 valid_loss = running_valid_loss/len(valid_loader)
                 valid_acc = rsna_accuracy(list_valid_targets, list_valid_preds)
-                valid_blacc = balanced_accuracy_score(list_valid_targets, list_valid_preds)
+                # valid_blacc = balanced_accuracy_score(list_valid_targets, list_valid_preds)
                 valid_pfbeta = pfbeta(list_valid_targets, list_valid_preds, 1)
                 valid_precision, valid_recall, valid_f1 = rsna_precision_recall_f1(list_valid_targets, list_valid_preds)
             
@@ -281,7 +281,7 @@ def train(df_data : pd.DataFrame,
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
-                mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_blacc", valid_blacc, step=epoch)
+                # mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_blacc", valid_blacc, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_loss", valid_loss, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_pfbeta", valid_pfbeta, step=epoch)
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_precision", valid_precision, step=epoch)
