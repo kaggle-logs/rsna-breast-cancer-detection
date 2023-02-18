@@ -12,7 +12,7 @@ csv_columns : ["laterality_LE", "view_LE", "age", "implant"]
 debug : False
 
 dataset :
-  input_path : "/kaggle/input/rsna-breast-cancer-512-pngs/output"
+  input_path : "/kaggle/input/rsna-breast-cancer-512-pngs/"
   external : True
 
 model:
