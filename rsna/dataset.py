@@ -66,7 +66,7 @@ class RSNADatasetPNG(Dataset):
         # Select path and read image
         # デフォルトではグレースケールで画像を読み込んでいる
         image_path = self.dataframe['path'][index]
-        image = prep.load_img(image_path)
+        image = prep.load_img(image_path, color = "rgb")
 
         # preprocess
         image, aux = self.breast_prep.get_breast_region(image)

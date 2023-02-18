@@ -20,7 +20,7 @@ from torch.cuda.amp import GradScaler, autocast
 from rsna.utility import data_to_device
 from rsna.dataset import RSNADataset, RSNADatasetPNG
 from rsna.preprocess import Transform
-from rsna.model import EfficientNet
+from rsna.model import get_model
 from rsna.loss import get_loss
 from rsna.config import DEVICE, TPU
 from rsna.metrics import rsna_accuracy, rsna_roc, pfbeta, rsna_precision_recall_f1, optimal_f1
@@ -67,7 +67,10 @@ def train(df_data : pd.DataFrame,
         print(f"-------- Fold #{idx_fold} #train={len(train_data)}, #valid={len(valid_data)}")
 
         # --- model init
-        model = EfficientNet(model_name=cfg.model.model_name, pretrained=cfg.model.pretrained).to(DEVICE)
+        model = get_model( 
+            cfg.model.model_type,
+            cfg.model.model_name, 
+            cfg.model.pretrained).to(DEVICE)
 
         # --- Optimizer
         if cfg.optimizer.name == "Adam" :
@@ -304,7 +307,7 @@ def train(df_data : pd.DataFrame,
                 pickle.dump(dict_valid_pID, f)
 
             # model save
-            model_name = f"models/model_fold{idx_fold+1}_epoch{epoch+1}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
+            model_name = f"models/model_fold{idx_fold}_epoch{epoch}_vacc{valid_acc:.3f}_vpfbeta{valid_pfbeta:.3f}.pth"
             if TPU:
                 xm.save(model.state_dict(), model_name)
             else:

@@ -16,7 +16,7 @@ def load_img(fname, color="gray"):
     if color == "gray" : 
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     elif color == "rgb": 
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     else :
         raise NotImplementedError(color)
 

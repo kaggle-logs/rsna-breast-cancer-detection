@@ -8,6 +8,17 @@ from torchvision.models import resnet34, resnet50
 
 import timm
 
+
+def get_model(model_type, model_name, pretrained) : 
+
+    if model_type == "resnet" : 
+        return ResNeXt(model_name, pretrained)
+    elif model_type == "effnet" : 
+        return EfficientNet(model_name, pretrained)
+    else : 
+        raise NotImplementedError
+
+
 class ResNet50Network(nn.Module):
     
     def __init__(self, output_size, num_columns, is_train = True):
@@ -51,6 +62,24 @@ class ResNet50Network(nn.Module):
         if prints: print('Out shape:', out.shape)
         
         return out
+
+
+class ResNeXt(nn.Module):
+    def __init__(self, model_name="seresnext50_32x4d", pretrained=False):
+        super().__init__()
+
+        self.model = timm.create_model(model_name, pretrained=pretrained)
+        self.dense1 = nn.Linear(self.model.fc.out_features, 500)
+        self.dense2 = nn.Linear(500, 1)
+
+    def forward(self, img, meta):
+        x = self.model(img)
+        # x = F.adaptive_avg_pool2d(x,1)
+        # x = torch.flatten(x,1,3)
+        x = self.dense1(x)
+        x = self.dense2(x)
+
+        return x
 
 
 class EfficientNet(nn.Module):
