@@ -8,6 +8,7 @@ from sklearn.utils import resample
 from albumentations import (ToFloat, Normalize, VerticalFlip, HorizontalFlip, Compose, Resize,
                             RandomBrightnessContrast, HueSaturationValue, Blur, GaussNoise, CoarseDropout,
                             Rotate, RandomResizedCrop, Cutout, ShiftScaleRotate, ToGray)
+import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
@@ -334,6 +335,18 @@ class Transform():
                     CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=1.0),
                     Resize(1024,512),
                     Normalize(mean=(0.2179,), std=(0.0529,)),
+                    ToTensorV2(),
+                ])
+            elif cfg.aug.version == "v0.0.5" :
+                self.transform_train = A.Compose([
+                    A.OneOf([
+                        A.HorizontalFlip(p = cfg.aug.horizontal_flip), # 水平方向にフリップ
+                        A.VerticalFlip(p = cfg.aug.vertical_flip), # 垂直方向にフリップ
+                        A.ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]), # ランダムにアフィン変換を適用
+                    ], p=0.7),
+                    A.RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.5, brightness_by_max=True, p=0.25),
+                    A.CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=0.25),
+                    A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
                     ToTensorV2(),
                 ])
             else:
