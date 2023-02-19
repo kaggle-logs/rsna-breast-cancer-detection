@@ -2,13 +2,13 @@
 # - sersesnext50 でも学習は進まなかったので、effnetに戻す
 # - augmentatino も少し緩めた （oneof でまとめる）
 # - データは 512x512 で固定
-# - AdamW の学習率を 1e-4 に変更（1桁小さくした）
 # - downsample の重複バグを直して再チャレンジ
 #   - 1つの問題として、バッチ内の pos/neg の割合が非常に偏っているということがわかった
+#   - BCEWithLogits のweightはもとに戻した
 
 
 fold : 5 
-fold_break : 1
+fold_break : -1
 epochs : 10 
 num_workers : 2 # DataLoader の num_workers, 2が丁度いいらしい
 autocast : True
@@ -34,7 +34,7 @@ loss:
   pos_weight : 50
 
 preprocess:
-  sampling : "down"
+  sampling : "normal"
   img_prep_version : "not-used" # 胸部抽出のバージョン
 
 aug:
@@ -44,7 +44,7 @@ aug:
 
 optimizer:
   name : "Adam"
-  learning_rate : 1e-4
+  learning_rate : 0.001
   weight_decay : 0.0
 
 scheduler:

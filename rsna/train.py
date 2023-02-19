@@ -46,7 +46,8 @@ def train(df_data : pd.DataFrame,
     patient_id = df_data["patient_id"]
 
     # output 
-    f_output = open(f"log_train.txt", "w")
+    with open(f"logs/log_train.txt", "w") as f:
+        f.write("--- start \n")
 
     # For each fold
     for idx_fold, (train_index, valid_index) in enumerate(kfold.split(unique_patient_id)):
@@ -62,12 +63,16 @@ def train(df_data : pd.DataFrame,
         train_data = df_data[is_train].reset_index(drop=True)
         valid_data = df_data[is_valid].reset_index(drop=True)
 
-        with open(f"train_index_fold{idx_fold}.pkl", "wb") as f:
-            pickle.dump(train_index, f)
-        with open(f"valid_index_fold{idx_fold}.pkl", "wb") as f:
-            pickle.dump(valid_index, f)
+        with open(f"logs/f{idx_fold}_train_data.pkl", "wb") as f:
+            pickle.dump(train_data, f)
+        with open(f"logs/fold{idx_fold}_valid_data.pkl", "wb") as f:
+            pickle.dump(valid_data, f)
 
-        print(f"-------- Fold #{idx_fold} #train={len(train_data)}, #valid={len(valid_data)}")
+        pos_train = train_data[train_data["cancer"]==1]
+        neg_train = train_data[train_data["cancer"]==0]
+        pos_valid = valid_data[valid_data["cancer"]==1]
+        neg_valid = valid_data[valid_data["cancer"]==0]
+        print(f"-------- Fold #{idx_fold} #train={len(train_data)} ({len(pos_train)/len(train_data)}), #valid={len(valid_data)} ({len(pos_valid)/len(valid_data)})")
 
         # --- model init
         model = get_model( 
@@ -284,10 +289,12 @@ def train(df_data : pd.DataFrame,
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
                 print(logs_per_epoch)
                 print(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)}')
+                print(f'train optimal F1 = {train_optimal_f1} (thr = {train_optimal_f1_thre}), valid optimal F1 = {valid_optimal_f1} (thr = {valid_optimal_f1_thre})')
                 # logfiles
-                f_output.write(logs_per_epoch+"\n")
-                f_output.write(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)} \n')
-                f_output.write(f'{train_optimal_f1}, {train_optimal_f1_thre}, {valid_optimal_f1}, {valid_optimal_f1_thre}\n')
+                with open("logs_train.txt", "a") as f:
+                    f.write(logs_per_epoch+"\n")
+                    f.write(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)} \n')
+                    f.write(f'{train_optimal_f1}, {train_optimal_f1_thre}, {valid_optimal_f1}, {valid_optimal_f1_thre}\n')
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
@@ -308,9 +315,9 @@ def train(df_data : pd.DataFrame,
                 scheduler.step(valid_loss)
 
             # metrics save
-            with open(f"metrics/f{idx_fold+1}_dict_train_pID.pkl", "wb") as f:
+            with open(f"logs/metrics/f{idx_fold+1}_dict_train_pID.pkl", "wb") as f:
                 pickle.dump(dict_train_pID, f)
-            with open(f"metrics/f{idx_fold+1}_dict_valid_pID.pkl", "wb") as f:
+            with open(f"logs/metrics/f{idx_fold+1}_dict_valid_pID.pkl", "wb") as f:
                 pickle.dump(dict_valid_pID, f)
 
             # model save

@@ -28,15 +28,18 @@ def pfbeta(labels, predictions, beta=1.):
     cfp = 0
 
     for idx in range(len(labels)):
+        # [0, 1] の間に値を収めるための処理
         prediction = min(max(predictions[idx], 0), 1)
         if (labels[idx]):
             y_true_count += 1
-            ctp += prediction
+            ctp += prediction # True positive
         else:
-            cfp += prediction
+            cfp += prediction # False positive
 
     # sanity check
-    if y_true_count == 0 : return 0
+    if y_true_count == 0 : 
+        # print(f"WARNING ::: There is no positive events. {labels}")
+        return 0
 
     beta_squared = beta * beta
     c_precision = ctp / (ctp + cfp)
