@@ -138,7 +138,7 @@ def train(df_data : pd.DataFrame,
                     #   - out : [BS, 1]
                     out = model(image, meta)
                     # 3. calc loss
-                    loss = criterion(out, targets.unsqueeze(1).float())
+                    loss = criterion(out, targets.float())
                 
                 # 4. Backward
                 scaler.scale(loss).backward()
@@ -155,10 +155,10 @@ def train(df_data : pd.DataFrame,
                 running_train_loss += loss.item()
                 #   - acc
                 list_train_targets.extend(targets.cpu().numpy())
-                list_train_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy()) 
+                list_train_preds.extend(torch.sigmoid(out).cpu().detach().numpy()) 
                 #   - prediction_id
                 targets = targets.cpu().numpy()
-                preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
+                preds = torch.sigmoid(out).cpu().detach().numpy()
                 for prediction_id, target, pred in zip(prediction_ids, targets, preds) : 
                     if not dict_train_pID.get(prediction_id, False) :
                         # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
@@ -235,17 +235,17 @@ def train(df_data : pd.DataFrame,
                         out = model(image, meta)
 
                         # calc loss
-                        loss = criterion(out, targets.unsqueeze(1).float())
+                        loss = criterion(out, targets.float())
 
                         # Save information
                         #   - loss
                         running_valid_loss += loss.item()
                         #   - acc
                         list_valid_targets.extend(targets.cpu().numpy())
-                        list_valid_preds.extend(torch.sigmoid(out).squeeze(1).cpu().detach().numpy())
+                        list_valid_preds.extend(torch.sigmoid(out).cpu().detach().numpy())
                         #   - prediction_id
                         targets = targets.cpu().numpy()
-                        preds = torch.sigmoid(out).squeeze(1).cpu().detach().numpy()
+                        preds = torch.sigmoid(out).cpu().detach().numpy()
                         for prediction_id, target, pred in zip(prediction_ids, targets, preds) : 
                             if not dict_valid_pID.get(prediction_id, False) :
                                 # 同じ prediciton_id に対して y_true は1種類であると決め打ちしている
