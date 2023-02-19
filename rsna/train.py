@@ -45,6 +45,9 @@ def train(df_data : pd.DataFrame,
     unique_patient_id = df_data["patient_id"].unique()
     patient_id = df_data["patient_id"]
 
+    # output 
+    f_output = open(f"log_train.txt", "w")
+
     # For each fold
     for idx_fold, (train_index, valid_index) in enumerate(kfold.split(unique_patient_id)):
 
@@ -281,6 +284,10 @@ def train(df_data : pd.DataFrame,
                 logs_per_epoch = f'# Epoch : {epoch}/{cfg.epochs} | train loss : {train_loss :.4f}, train acc {train_acc :.4f}, train_pfbeta {train_pfbeta:.4f} | valid loss {valid_loss :.4f}, valid acc {valid_acc :.4f}, valid_pfbeta {valid_pfbeta:.4f}'
                 print(logs_per_epoch)
                 print(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)}')
+                # logfiles
+                f_output.write(logs_per_epoch+"\n")
+                f_output.write(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)} \n')
+                f_output.write(f'{train_optimal_f1}, {train_optimal_f1_thre}, {valid_optimal_f1}, {valid_optimal_f1_thre}\n')
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)
