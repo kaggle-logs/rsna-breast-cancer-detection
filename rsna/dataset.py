@@ -5,7 +5,7 @@ import pydicom
 
 # pytorch
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Sampler
 
 # local
 import rsna.preprocess as prep
@@ -89,3 +89,39 @@ class RSNADatasetPNG(Dataset):
                     "meta": csv_data, 
                     "prediction_id"  : str(self.dataframe['patient_id'][index]) + "_" + str(self.dataframe["laterality"][index])
                     }
+
+
+class BalanceSampler(Sampler):
+    """
+    neg:pos を bs-1:1 の割合で混ぜるためのSampler
+
+    - pos_index, neg_index の作成
+    - length でバッチ分割したときのもの * バッチ数 で全データ数を作成（正確な全データではない、落としているデータもある）
+    - pos, neg の indexをシャッフルする
+    - neg_index, [:length] で全数を取得、reshape(-1, r) で 全データ//31 の個数分のバッチができる
+    - pos_index, 適当にバッチの個数（バッチサイズではなく、バッチが何個あるか）とってくる
+    - これらを concat すると、31:1の割合で pos があるバッチが出来上がる（常にposがあるということになる）
+    """
+
+    def __init__(self, dataset, ratio=8):
+        self.r = ratio-1
+        self.dataset = dataset
+        self.pos_index = np.where(dataset.dataframe.cancer>0)[0]
+        self.neg_index = np.where(dataset.dataframe.cancer==0)[0]
+
+        self.length = self.r*int(np.floor(len(self.neg_index)/self.r))
+
+    def __iter__(self):
+        pos_index = self.pos_index.copy()
+        neg_index = self.neg_index.copy()
+        np.random.shuffle(pos_index)
+        np.random.shuffle(neg_index)
+
+        neg_index = neg_index[:self.length].reshape(-1,self.r)
+        pos_index = np.random.choice(pos_index, self.length//self.r).reshape(-1,1)
+
+        index = np.concatenate([pos_index,neg_index],-1).reshape(-1)
+        return iter(index)
+
+    def __len__(self):
+        return self.length

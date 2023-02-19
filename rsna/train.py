@@ -18,7 +18,7 @@ from torch.cuda.amp import GradScaler, autocast
 
 # local
 from rsna.utility import data_to_device
-from rsna.dataset import RSNADataset, RSNADatasetPNG
+from rsna.dataset import RSNADataset, RSNADatasetPNG, BalanceSampler
 from rsna.preprocess import Transform
 from rsna.model import get_model
 from rsna.loss import get_loss
@@ -104,7 +104,7 @@ def train(df_data : pd.DataFrame,
             train_loader = DataLoader( train_dataset, batch_size=cfg.batch_size_1, num_workers=cfg.num_workers, pin_memory=True, sampler=train_sampler)
             valid_loader = DataLoader( valid_dataset, batch_size=cfg.batch_size_2, num_workers=cfg.num_workers, pin_memory=True, sampler=valid_sampler)
         else :
-            train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
+            train_loader = DataLoader(train_dataset, sampler=BalanceSampler(train_dataset, cfg.batch_size_1//1), batch_size=cfg.batch_size_1, shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
             valid_loader = DataLoader(valid_dataset, batch_size=cfg.batch_size_2, shuffle=False, num_workers=cfg.num_workers, pin_memory=True) #### shuffle = False ####
 
         # === EPOCHS ===
