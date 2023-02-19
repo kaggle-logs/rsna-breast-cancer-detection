@@ -3,6 +3,8 @@
 # - augmentatino も少し緩めた （oneof でまとめる）
 # - データは 512x512 で固定
 # - AdamW の学習率を 1e-4 に変更（1桁小さくした）
+# - downsample の重複バグを直して再チャレンジ
+#   - 1つの問題として、バッチ内の pos/neg の割合が非常に偏っているということがわかった
 
 
 fold : 2
@@ -32,11 +34,11 @@ loss:
   pos_weight : 50
 
 preprocess:
-  sampling : "normal"
+  sampling : "down"
   img_prep_version : "not-used" # 胸部抽出のバージョン
 
 aug:
-  version: "v0.0.4"
+  version: "v0.0.5"
   vertical_flip : 0.5
   horizontal_flip : 0.5
 
