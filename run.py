@@ -67,6 +67,7 @@ if __name__ == "__main__" :
     fix_seed()
     # output dir
     os.makedirs("models/", exist_ok=True)
-    os.makedirs("metrics/", exist_ok=True)
+    os.makedirs("logs/", exist_ok=True)
+    os.makedirs("logs/metrics", exist_ok=True)
     # 
     main()
