@@ -294,7 +294,7 @@ def train(df_data : pd.DataFrame,
                 with open("logs_train.txt", "a") as f:
                     f.write(logs_per_epoch+"\n")
                     f.write(f'train pfbeta = {pfbeta(list_train_pID_target, list_train_pID_pred_max, 1)}, valid pfbeta = {pfbeta(list_valid_pID_target, list_valid_pID_pred_max, 1)} \n')
-                    f.write(f'{train_optimal_f1}, {train_optimal_f1_thre}, {valid_optimal_f1}, {valid_optimal_f1_thre}\n')
+                    f.write(f'{train_optimal_f1 :.4f}, {train_optimal_f1_thre}, {valid_optimal_f1 :.4f}, {valid_optimal_f1_thre}\n')
 
                 # mlflow logs
                 mlflow_client.log_metric(run_id, f"{idx_fold}fold_valid_acc", valid_acc, step=epoch)

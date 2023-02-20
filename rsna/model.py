@@ -90,10 +90,6 @@ class EfficientNet(nn.Module):
         self.backbone = timm.create_model(model_name, pretrained=pretrained, in_chans=3)
         self.forward_features = self.backbone.forward_features
         self.dense = nn.Linear(1792, out_dim)
-        # self.avgpool2d = nn.AvgPool2d()
-        # self.dropout = nn.Dropout(p=0.3)
-        # self.dense1 = nn.Linear(self.backbone.classifier.out_features, 500)
-        # self.dense2 = nn.Linear(500, out_dim)
         
         # ヘッドだけ学習させるなら
         if only_head : 
@@ -101,21 +97,6 @@ class EfficientNet(nn.Module):
                 param.requires_grad = False
         
     def forward(self, x, meta, verbose=False):
-#        # ConvNextV2
-#        if verbose: print("-- input : ", x.shape)
-#            
-#        x = self.backbone(x.float())
-#        if verbose: print(x.shape) # (BS, out_features) ... Effnet はデフォルトで10000次元出力
-#            
-#        x = self.dropout(x)
-#        if verbose: print(x.shape)
-#            
-#        x = self.dense1(x)
-#        if verbose: print(x.shape)
-#            
-#        x = self.dense2(x)
-#        if verbose: print(x.shape)
-
         x = self.forward_features(x.float())
         x = F.adaptive_avg_pool2d(x, 1)
         x = torch.flatten(x, 1, 3)
