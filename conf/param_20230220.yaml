@@ -17,6 +17,7 @@ debug : False
 
 dataset :
   input_path : "/kaggle/input/dataset1024x512/"
+  local_input_path : "/Users/ktakeda/workspace/kaggle/rsna-breast-cancer-detection/data/rsna1024x512/"
   external : False 
 
 model:
@@ -33,7 +34,7 @@ preprocess:
   img_prep_version : "not-used" # 胸部抽出のバージョン
 
 aug:
-  version: "v0.0.6"
+  version: "v0.0.7"
   vertical_flip : 0.5
   horizontal_flip : 0.5
 

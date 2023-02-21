@@ -361,6 +361,19 @@ class Transform():
                     A.Normalize(mean=(0., 0., 0.), std=(1, 1, 1)),
                     ToTensorV2(),
                 ])
+            elif cfg.aug.version == "v0.0.7" :
+                self.transform_train = A.Compose([
+                    A.Resize(512,512),
+                    A.OneOf([
+                        A.HorizontalFlip(p = cfg.aug.horizontal_flip), # 水平方向にフリップ
+                        A.VerticalFlip(p = cfg.aug.vertical_flip), # 垂直方向にフリップ
+                        A.ShiftScaleRotate(rotate_limit=90, scale_limit = [0.8, 1.2]), # ランダムにアフィン変換を適用
+                    ], p=0.7),
+                    A.RandomBrightnessContrast(brightness_limit=0.5, contrast_limit=0.5, brightness_by_max=True, p=0.25),
+                    A.CoarseDropout(max_holes=4, max_height=100, max_width=100, min_holes=1, min_height=50, min_width=50, fill_value=0, p=0.25),
+                    A.Normalize(mean=(0., 0., 0.), std=(1, 1, 1)),
+                    ToTensorV2(),
+                ])
             else:
                 raise NotImplementedError(f"The {cfg.aug_version} is not implemented yet.")
         
