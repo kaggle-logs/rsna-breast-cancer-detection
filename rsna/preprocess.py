@@ -378,7 +378,9 @@ class Transform():
                 raise NotImplementedError(f"The {cfg.aug_version} is not implemented yet.")
         
             self.transform_test = Compose([
-                Normalize(mean=0, std=1),
+                A.Resize(512,512),
+                # Normalize(mean=0, std=1),
+                A.Normalize(mean=(0., 0., 0.), std=(1, 1, 1)),
                 ToTensorV2(),
             ])
     
